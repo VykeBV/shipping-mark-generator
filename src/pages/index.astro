@@ -1,0 +1,22 @@
+---
+const base = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : import.meta.env.BASE_URL + '/';
+const target = `${base}Shipping Mark Template.html`;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Vyke Create — Shipping Mark Generator</title>
+  <meta http-equiv="refresh" content={`0; url=${target}`} />
+  <link rel="canonical" href={target} />
+  <style>
+    body { margin: 0; background: #2b2d31; color: #9DC9E8; font: 14px/1.4 system-ui, sans-serif; display: grid; place-items: center; min-height: 100vh; }
+    a { color: #9DC9E8; }
+  </style>
+</head>
+<body>
+  <p>Loading editor… <a href={target}>Open Shipping Mark Template</a></p>
+</body>
+</html>

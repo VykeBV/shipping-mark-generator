@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vyke Create · Shipping Mark Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    height: 100vh;
+    font-family: "Roboto", system-ui, -apple-system, "Segoe UI", sans-serif;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 0%, rgba(157,201,232,.05), transparent 60%),
+      #2b2d31;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 352px 16px 16px;
+    overflow: hidden;
+  }
+  .stage { transform-origin: center; display: block; }
+  .mobile-topbar { display: none; }
+
+  /* ─── Vyke Create dark Tweaks panel (identical to Data Sheet creator) ─ */
+  .twk-panel {
+    background: rgba(18, 19, 23, 0.88) !important;
+    color: rgba(255, 255, 255, 0.92) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(140%) !important;
+    backdrop-filter: blur(28px) saturate(140%) !important;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.05) inset,
+      0 20px 60px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(157, 201, 232, 0.08) !important;
+    width: 320px !important;
+    font: 11.5px/1.4 "Inter", "Roboto", system-ui, -apple-system, sans-serif !important;
+  }
+  .twk-panel .twk-hd {
+    background:
+      linear-gradient(180deg, rgba(157, 201, 232, 0.10), rgba(157, 201, 232, 0) 80%),
+      linear-gradient(180deg, #0c0c11, #0a0a0e);
+    height: 64px;
+    padding: 12px 14px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    position: relative;
+    gap: 10px;
+  }
+  .twk-panel .twk-hd b {
+    flex: 1;
+    height: 100%;
+    background-image: url("vyke-create-logo.png");
+    background-size: contain;
+    background-position: left center;
+    background-repeat: no-repeat;
+    text-indent: -9999px;
+    overflow: hidden;
+    filter: drop-shadow(0 1px 10px rgba(157, 201, 232, 0.18));
+  }
+  .twk-panel .twk-x {
+    color: rgba(255, 255, 255, 0.55) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    z-index: 1;
+  }
+  .twk-panel .twk-x:hover {
+    color: #fff !important;
+    background: rgba(157, 201, 232, 0.18) !important;
+  }
+  .twk-panel .twk-body {
+    padding: 4px 16px 16px !important;
+    scrollbar-color: rgba(157, 201, 232, 0.2) transparent !important;
+  }
+  .twk-panel .twk-body::-webkit-scrollbar-thumb {
+    background: rgba(157, 201, 232, 0.18) !important;
+  }
+  .twk-panel .twk-sect {
+    color: #9DC9E8 !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.12em !important;
+    font-size: 9.5px !important;
+    padding-top: 14px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    margin-top: 6px;
+  }
+  .twk-panel .twk-sect:first-child { border-top: 0; margin-top: 0; padding-top: 8px !important; }
+  .twk-panel .twk-lbl,
+  .twk-panel .twk-lbl > span:first-child {
+    color: rgba(255, 255, 255, 0.85) !important;
+  }
+  .twk-panel .twk-val { color: rgba(255, 255, 255, 0.5) !important; }
+  .twk-panel .twk-field {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: rgba(255, 255, 255, 0.92) !important;
+    height: 30px !important;
+    border-radius: 8px !important;
+  }
+  .twk-panel .twk-field:focus {
+    border-color: #9DC9E8 !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    box-shadow: 0 0 0 3px rgba(157, 201, 232, 0.12) !important;
+  }
+  .twk-panel select.twk-field {
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%239DC9E8' d='M0 0h10L5 6z'/></svg>") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 10px center !important;
+  }
+  .twk-panel .twk-seg {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .twk-panel .twk-seg-thumb {
+    background: linear-gradient(180deg, #9DC9E8, #7FB6DC) !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+  }
+  .twk-panel .twk-seg button { color: rgba(255, 255, 255, 0.6) !important; font-weight: 600 !important; }
+  .twk-panel .twk-seg button[aria-checked="true"] { color: #000 !important; }
+  .twk-panel .twk-slider {
+    background: rgba(255, 255, 255, 0.08) !important;
+  }
+  .twk-panel .twk-slider::-webkit-slider-thumb {
+    background: #9DC9E8 !important;
+    border: 0 !important;
+    box-shadow: 0 0 0 4px rgba(157, 201, 232, 0.15), 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+  }
+  .twk-panel .twk-slider::-moz-range-thumb {
+    background: #9DC9E8 !important;
+    border: 0 !important;
+  }
+  .twk-panel .twk-toggle {
+    background: rgba(255, 255, 255, 0.1) !important;
+  }
+  .twk-panel .twk-toggle[aria-checked="true"] {
+    background: #9DC9E8 !important;
+  }
+  .twk-panel .twk-toggle .twk-toggle-thumb,
+  .twk-panel .twk-toggle > span {
+    background: #fff !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4) !important;
+  }
+  .twk-panel .twk-chip {
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow: 0 0 0 2px transparent !important;
+  }
+  .twk-panel .twk-chip[aria-checked="true"] {
+    border-color: #9DC9E8 !important;
+    box-shadow: 0 0 0 2px rgba(157, 201, 232, 0.35) !important;
+  }
+  .twk-panel .twk-btn {
+    background: linear-gradient(180deg, #9DC9E8, #7FB6DC) !important;
+    color: #000 !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.02em !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    box-shadow: 0 4px 14px rgba(157, 201, 232, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.06) inset !important;
+    transition: transform .08s ease, box-shadow .15s ease;
+  }
+  .twk-panel .twk-btn:hover {
+    box-shadow: 0 6px 20px rgba(157, 201, 232, 0.32), 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+    transform: translateY(-1px);
+  }
+  .twk-panel .twk-btn.secondary {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset !important;
+    flex: 1;
+  }
+  .twk-panel .twk-btn.secondary:hover {
+    background: rgba(157, 201, 232, 0.12) !important;
+    color: #fff !important;
+    box-shadow: 0 0 0 1px rgba(157, 201, 232, 0.3) inset !important;
+  }
+  .twk-tip {
+    background: rgba(157, 201, 232, 0.06) !important;
+    border: 1px solid rgba(157, 201, 232, 0.12) !important;
+    border-radius: 8px;
+    padding: 10px 12px !important;
+    color: rgba(255, 255, 255, 0.72) !important;
+    line-height: 1.55;
+  }
+  .twk-tip b { color: #9DC9E8 !important; font-weight: 600; }
+
+  /* ─── Advanced settings trigger ─────────────────────────────────────
+     Deliberately styled to NOT look like a toggle — it's a pro
+     affordance that opens a side-panel. Outlined card with a gear
+     icon and a chevron. */
+  .twk-pro-trigger {
+    appearance: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 12px;
+    margin-top: 4px;
+    border-radius: 8px;
+    border: 1px solid rgba(157, 201, 232, 0.28);
+    background:
+      linear-gradient(180deg, rgba(157, 201, 232, 0.06), rgba(157, 201, 232, 0.02));
+    color: #9DC9E8;
+    font: 700 11px/1 "Inter", "Roboto", system-ui, sans-serif;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: background .14s ease, border-color .14s ease, transform .08s ease;
+  }
+  .twk-pro-trigger:hover {
+    background:
+      linear-gradient(180deg, rgba(157, 201, 232, 0.14), rgba(157, 201, 232, 0.06));
+    border-color: rgba(157, 201, 232, 0.55);
+    color: #BCE0F2;
+  }
+  .twk-pro-trigger[aria-expanded="true"] {
+    background:
+      linear-gradient(180deg, rgba(157, 201, 232, 0.22), rgba(157, 201, 232, 0.10));
+    border-color: #9DC9E8;
+    color: #fff;
+  }
+  .twk-pro-trigger .twk-pro-label { flex: 1; text-align: left; text-transform: uppercase; }
+  .twk-pro-trigger .twk-pro-chev {
+    font-size: 16px;
+    line-height: 1;
+    transform: translateY(-1px);
+    opacity: 0.7;
+  }
+
+  /* ─── Advanced settings side-panel ──────────────────────────────────
+     Sits to the LEFT of the main Tweaks panel (so it doesn't cover
+     the live preview). Same dark-glass treatment as .twk-panel, but
+     with a left-edge accent stripe to mark it as a separate pro
+     surface. On mobile it docks as a full-width sheet at the top. */
+  .adv-panel {
+    position: fixed;
+    right: 336px;             /* 320 (.twk-panel width) + 16 gutter */
+    top: 16px;
+    bottom: 16px;
+    width: 320px;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    background: rgba(18, 19, 23, 0.92);
+    color: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-left: 3px solid #9DC9E8;
+    border-radius: 12px;
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.05) inset,
+      0 24px 70px rgba(0, 0, 0, 0.55),
+      0 0 0 1px rgba(157, 201, 232, 0.12);
+    font: 11.5px/1.4 "Inter", "Roboto", system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+    animation: advSlideIn .18s ease;
+  }
+  @keyframes advSlideIn {
+    from { opacity: 0; transform: translateX(8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .adv-hd {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 64px;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background:
+      linear-gradient(180deg, rgba(157, 201, 232, 0.12), rgba(157, 201, 232, 0) 80%),
+      linear-gradient(180deg, #0c0c11, #0a0a0e);
+  }
+  .adv-hd-pro {
+    font: 800 9px/1 "Inter", "Roboto", sans-serif;
+    letter-spacing: 0.16em;
+    color: #000;
+    background: linear-gradient(180deg, #9DC9E8, #7FB6DC);
+    padding: 4px 7px;
+    border-radius: 4px;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+  }
+  .adv-hd-title {
+    flex: 1;
+    font: 700 12.5px/1 "Inter", "Roboto", sans-serif;
+    color: #fff;
+    letter-spacing: 0.02em;
+  }
+  .adv-close {
+    appearance: none;
+    width: 28px; height: 28px;
+    border: 0;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 18px; line-height: 1;
+    cursor: pointer;
+    transition: background .12s ease, color .12s ease;
+  }
+  .adv-close:hover { background: rgba(157, 201, 232, 0.18); color: #fff; }
+  .adv-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px 18px;
+    scrollbar-color: rgba(157, 201, 232, 0.2) transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .adv-body::-webkit-scrollbar-thumb { background: rgba(157, 201, 232, 0.18); }
+  .adv-sect {
+    color: #9DC9E8;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    padding-top: 10px;
+    margin-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .adv-body > .adv-sect:first-child { border-top: 0; padding-top: 4px; margin-top: 0; }
+  .adv-help {
+    font-size: 10.5px;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1.45;
+    padding: 0 2px;
+  }
+  .adv-empty {
+    font-size: 10.5px;
+    color: rgba(255, 255, 255, 0.45);
+    font-style: italic;
+    padding: 4px 2px;
+  }
+  /* Per-icon row inside the Advanced panel */
+  .adv-icon-row {
+    display: grid;
+    grid-template-columns: 28px 1fr 56px auto;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+  }
+  .adv-icon-thumb {
+    width: 24px; height: 24px;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 6px;
+  }
+  .adv-icon-thumb svg { width: 18px; height: 18px; display: block; }
+  .adv-icon-meta { min-width: 0; }
+  .adv-icon-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.88);
+    font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .adv-icon-iso {
+    font-size: 9.5px;
+    color: rgba(255, 255, 255, 0.45);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .adv-icon-input { width: 56px !important; height: 26px !important; font-size: 11px !important; }
+  .adv-icon-unit { color: rgba(255, 255, 255, 0.5); font-size: 10px; }
+
+  .twk-footer {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.35);
+    font-weight: 500;
+  }
+
+  /* ─── Welcome / sign-in overlay ─────────────────────────────────────
+     Sits on top of everything until the user has registered. Editor is
+     rendered behind, blurred + dimmed via .vyke-locked on body. */
+  body.vyke-locked .stage,
+  body.vyke-locked .twk-panel,
+  body.vyke-locked #__help-btn,
+  body.vyke-locked .adv-panel {
+    filter: blur(3px) brightness(0.55);
+    pointer-events: none;
+    user-select: none;
+  }
+  .vyke-welcome-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(8, 9, 12, 0.65);
+    -webkit-backdrop-filter: blur(8px) saturate(120%);
+    backdrop-filter: blur(8px) saturate(120%);
+    font: 13px/1.5 "Inter", "Roboto", system-ui, -apple-system, sans-serif;
+    color: rgba(255, 255, 255, 0.92);
+    animation: vykeFadeIn .22s ease;
+  }
+  @keyframes vykeFadeIn { from { opacity: 0 } to { opacity: 1 } }
+  .vyke-welcome-card {
+    width: min(420px, 100%);
+    background: rgba(18, 19, 23, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.05) inset,
+      0 40px 100px rgba(0, 0, 0, 0.6),
+      0 0 0 1px rgba(157, 201, 232, 0.12);
+    overflow: hidden;
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+  }
+  .vyke-welcome-hd {
+    padding: 28px 28px 20px;
+    text-align: center;
+    background:
+      linear-gradient(180deg, rgba(157, 201, 232, 0.10), transparent 70%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .vyke-welcome-logo {
+    width: 140px;
+    height: 36px;
+    margin: 0 auto 14px;
+    background-image: url("vyke-create-logo.png");
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: drop-shadow(0 1px 14px rgba(157, 201, 232, 0.22));
+  }
+  .vyke-welcome-eyebrow {
+    color: #9DC9E8;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .vyke-welcome-title {
+    margin: 4px 0 8px;
+    font: 700 22px/1.15 "Inter", "Roboto", sans-serif;
+    color: #fff;
+    letter-spacing: -0.01em;
+  }
+  .vyke-welcome-intro {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 12.5px;
+    line-height: 1.55;
+  }
+  .vyke-welcome-body {
+    padding: 22px 28px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .vyke-welcome-lbl {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 11.5px;
+    color: rgba(255, 255, 255, 0.78);
+    font-weight: 500;
+  }
+  .vyke-welcome-optional {
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 400;
+  }
+  .vyke-welcome-field {
+    appearance: none;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 11px 14px;
+    color: #fff;
+    font: 14px/1.2 "Inter", "Roboto", sans-serif;
+    transition: border-color .14s ease, background .14s ease, box-shadow .14s ease;
+  }
+  .vyke-welcome-field:focus {
+    outline: none;
+    border-color: #9DC9E8;
+    background: rgba(255, 255, 255, 0.07);
+    box-shadow: 0 0 0 3px rgba(157, 201, 232, 0.14);
+  }
+  .vyke-welcome-cta {
+    appearance: none;
+    border: 0;
+    border-radius: 10px;
+    padding: 13px 18px;
+    margin-top: 6px;
+    background: linear-gradient(180deg, #9DC9E8, #7FB6DC);
+    color: #000;
+    font: 700 13.5px/1 "Inter", "Roboto", sans-serif;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(157, 201, 232, 0.22),
+                0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+    transition: transform .08s ease, box-shadow .14s ease;
+  }
+  .vyke-welcome-cta:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 28px rgba(157, 201, 232, 0.36),
+                0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+  }
+  .vyke-welcome-cta:disabled {
+    opacity: 0.55;
+    cursor: progress;
+  }
+  .vyke-welcome-error {
+    background: rgba(255, 100, 100, 0.08);
+    border: 1px solid rgba(255, 100, 100, 0.3);
+    color: #ff9a9a;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 11.5px;
+  }
+  .vyke-welcome-fineprint {
+    margin-top: 4px;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 10.5px;
+    line-height: 1.5;
+    text-align: center;
+  }
+
+  /* ─── Account chip (Tweaks panel header area) ───────────────────────── */
+  .vyke-acc-wrap { position: relative; }
+  .vyke-acc-chip {
+    appearance: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 7px 9px;
+    margin: 0 0 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(255, 255, 255, 0.9);
+    font: 600 11.5px/1 "Inter", "Roboto", sans-serif;
+    cursor: pointer;
+    transition: background .12s ease, border-color .12s ease;
+  }
+  .vyke-acc-chip:hover {
+    background: rgba(157, 201, 232, 0.08);
+    border-color: rgba(157, 201, 232, 0.28);
+  }
+  .vyke-acc-avatar {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #9DC9E8, #7FB6DC);
+    color: #000;
+    display: grid;
+    place-items: center;
+    font: 700 11px/1 "Inter", "Roboto", sans-serif;
+    flex-shrink: 0;
+  }
+  .vyke-acc-name {
+    flex: 1;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .vyke-acc-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: rgba(255, 200, 100, 0.7);
+    box-shadow: 0 0 0 2px rgba(255, 200, 100, 0.15);
+    flex-shrink: 0;
+  }
+  .vyke-acc-dot[data-online="1"] {
+    background: #6EE39A;
+    box-shadow: 0 0 0 2px rgba(110, 227, 154, 0.18);
+  }
+  .vyke-acc-pop {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    z-index: 30;
+    background: rgba(18, 19, 23, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px 12px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    font: 11.5px/1.45 "Inter", "Roboto", sans-serif;
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .vyke-acc-pop-email { font-weight: 600; color: #fff; word-break: break-all; }
+  .vyke-acc-pop-status {
+    margin-top: 4px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 10.5px;
+  }
+  .vyke-acc-pop-action {
+    appearance: none;
+    margin-top: 10px;
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.85);
+    padding: 8px 10px;
+    border-radius: 8px;
+    font: 600 11.5px/1 "Inter", "Roboto", sans-serif;
+    cursor: pointer;
+    transition: background .12s ease, color .12s ease;
+  }
+  .vyke-acc-pop-action:hover {
+    background: rgba(255, 100, 100, 0.12);
+    border-color: rgba(255, 100, 100, 0.3);
+    color: #ff9a9a;
+  }
+
+  /* ─── Presets panel ────────────────────────────────────────────────── */
+  .vyke-pre-saverow {
+    display: flex;
+    gap: 6px;
+    align-items: stretch;
+  }
+  .vyke-pre-savename { flex: 1 1 auto; }
+  .vyke-pre-savebtn { flex: 0 0 auto; min-width: 70px; }
+  .vyke-pre-error {
+    background: rgba(255, 100, 100, 0.08);
+    border: 1px solid rgba(255, 100, 100, 0.28);
+    color: #ff9a9a;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 10.5px;
+  }
+  .vyke-pre-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 280px;
+    overflow-y: auto;
+    margin-top: 4px;
+    padding-right: 2px;
+    scrollbar-color: rgba(157, 201, 232, 0.2) transparent;
+  }
+  .vyke-pre-list::-webkit-scrollbar-thumb { background: rgba(157, 201, 232, 0.18); }
+  .vyke-pre-empty {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 11px;
+    font-style: italic;
+    padding: 8px 2px;
+    text-align: center;
+  }
+  .vyke-pre-row {
+    display: grid;
+    grid-template-columns: 44px 1fr auto auto;
+    align-items: center;
+    gap: 8px;
+    padding: 6px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .vyke-pre-row:hover {
+    background: rgba(157, 201, 232, 0.06);
+    border-color: rgba(157, 201, 232, 0.18);
+  }
+  .vyke-pre-thumb {
+    width: 44px; height: 32px;
+    background: #fff;
+    border-radius: 4px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+  }
+  .vyke-pre-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .vyke-pre-thumb-fallback {
+    font: 700 10px/1 "Inter", "Roboto", sans-serif;
+    color: rgba(0, 0, 0, 0.45);
+  }
+  .vyke-pre-meta { min-width: 0; }
+  .vyke-pre-name {
+    color: rgba(255, 255, 255, 0.92);
+    font: 600 11.5px/1.25 "Inter", "Roboto", sans-serif;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .vyke-pre-time {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 10px;
+    margin-top: 2px;
+  }
+  .vyke-pre-load {
+    appearance: none;
+    border: 1px solid rgba(157, 201, 232, 0.4);
+    background: rgba(157, 201, 232, 0.1);
+    color: #9DC9E8;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font: 700 10.5px/1 "Inter", "Roboto", sans-serif;
+    cursor: pointer;
+    transition: background .12s ease, color .12s ease;
+  }
+  .vyke-pre-load:hover {
+    background: linear-gradient(180deg, #9DC9E8, #7FB6DC);
+    color: #000;
+    border-color: transparent;
+  }
+  .vyke-pre-del {
+    appearance: none;
+    border: 0;
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.55);
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background .12s ease, color .12s ease;
+  }
+  .vyke-pre-del:hover {
+    background: rgba(255, 100, 100, 0.18);
+    color: #ff9a9a;
+  }
+
+  #__standalone-tweaks-btn {
+    background: linear-gradient(180deg, #9DC9E8, #7FB6DC) !important;
+    color: #000 !important;
+    box-shadow:
+      0 6px 24px rgba(157, 201, 232, 0.35),
+      0 0 0 1px rgba(255, 255, 255, 0.12) inset !important;
+  }
+  #__standalone-tweaks-btn:hover {
+    background: linear-gradient(180deg, #BCE0F2, #9DC9E8) !important;
+  }
+
+  /* ─── Shipping mark card — exact mm dimensions, drives WYSIWYG PDF ─── */
+  .shipping-mark {
+    --w-mm: 100;
+    --h-mm: 70;
+    --bleed-mm: 0;
+    container-type: inline-size;
+    position: relative;
+    width: calc((var(--w-mm) + var(--bleed-mm) * 2) * 1mm);
+    height: calc((var(--h-mm) + var(--bleed-mm) * 2) * 1mm);
+    background: #fff;
+    color: #000;
+    overflow: hidden;
+    box-shadow: 0 30px 80px -30px rgba(0,0,0,.25), 0 1px 0 rgba(0,0,0,.04);
+  }
+  /* Trim area inset by bleed; everything visible content lives inside this. */
+  .sm-trim {
+    position: absolute;
+    left: calc(var(--bleed-mm) * 1mm);
+    top: calc(var(--bleed-mm) * 1mm);
+    width: calc(var(--w-mm) * 1mm);
+    height: calc(var(--h-mm) * 1mm);
+    padding: 4mm 5mm;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5mm;
+  }
+  /* Trim outline — visible only when crop marks are on, used as an editor
+     guide. Stripped from PDF (we draw real crop marks via jsPDF). */
+  .sm-trim-guide {
+    position: absolute;
+    left: calc(var(--bleed-mm) * 1mm);
+    top: calc(var(--bleed-mm) * 1mm);
+    width: calc(var(--w-mm) * 1mm);
+    height: calc(var(--h-mm) * 1mm);
+    pointer-events: none;
+    border: 0.2mm dashed rgba(0, 100, 200, 0.6);
+    z-index: 5;
+  }
+
+  /* Header — brand name and optional logo */
+  .sm-header {
+    display: flex;
+    align-items: center;
+    gap: 3mm;
+    min-height: 8mm;
+  }
+  .sm-brand-logo {
+    max-height: 10mm;
+    max-width: 30mm;
+    flex-shrink: 0;
+  }
+  .sm-brand-logo.is-bw { filter: brightness(0); }
+  .sm-brand {
+    font-family: "Roboto", sans-serif;
+    font-weight: 700;
+    font-size: 4.2mm;
+    line-height: 1.1;
+    color: #000;
+    letter-spacing: -0.005em;
+  }
+
+  /* Body grid: text rows on the left, icons on the right.
+     The barcode is positioned absolutely (bottom-right of the trim area)
+     so the live preview matches the PDF render exactly — the PDF render
+     also anchors the barcode to bottom-right with PAD_Y margin.
+     `--barcode-w-mm` (set from JS) reserves horizontal room so the icons
+     column doesn't slide under the barcode's space; `padding-bottom`
+     reserves vertical room below the body for the barcode itself. */
+  .sm-body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4mm;
+    min-height: 0;
+    padding-right: calc(var(--barcode-w-mm, 36) * 1mm);
+    padding-bottom: calc(var(--barcode-block-h-mm, 26) * 1mm);
+  }
+
+  /* Text rows column */
+  .sm-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8mm;
+    min-width: 0;
+  }
+  /* Row layout uses FLEX-WRAP so label/value behave naturally at any row
+     width. When there's room, they sit on one line; when the row is too
+     narrow for both, value drops to its own line under the label (instead
+     of CSS grid's brutal per-character wrap). Words break on word
+     boundaries only — never mid-word — by leaving `overflow-wrap` at its
+     default `normal` value. */
+  .sm-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 2mm;
+    font-family: "Roboto", sans-serif;
+    font-size: 2.6mm;
+    line-height: 1.25;
+    color: #000;
+    position: relative;
+    /* row-gap kept tiny so wrapped value sits close to its label */
+    row-gap: 0;
+  }
+  .sm-row-label {
+    font-weight: 700;
+    flex: 0 0 auto;
+    max-width: 100%;
+  }
+  .sm-row-value {
+    font-weight: 400;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .sm-row-remove {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: rgba(0,0,0,.35);
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity .15s ease, background .15s ease, color .15s ease;
+    margin-left: 4px;
+  }
+  .sm-row:hover .sm-row-remove { opacity: 1; }
+  .sm-row-remove:hover { background: rgba(0,0,0,.06); color: #111; }
+  .sm-row-add {
+    align-self: flex-start;
+    appearance: none;
+    border: 1px dashed rgba(0,0,0,.3);
+    background: transparent;
+    color: rgba(0,0,0,.6);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font: inherit;
+    font-size: 10px;
+    cursor: pointer;
+    margin-top: 2px;
+    transition: color .15s ease, border-color .15s ease, background .15s ease;
+  }
+  .sm-row-add:hover { color: #111; border-color: rgba(0,0,0,.55); background: rgba(0,0,0,.03); }
+
+  /* Handling icons — flex wrap so each icon can have its own mm size.
+     Per-icon width/height come from inline styles set in JSX, and an
+     iconFit cap (computed in JS) constrains them when the body height
+     is small. The block clips on overflow as a final safety so the
+     icons never escape the trim area. */
+  .sm-icons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2mm;
+    align-content: start;
+    justify-content: center;
+    align-items: center;
+    max-width: 32mm;
+    max-height: 100%;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .sm-icon {
+    color: #000;
+    display: grid;
+    place-items: center;
+    /* width/height are set inline per icon */
+  }
+  .sm-icon svg { width: 100%; height: 100%; display: block; }
+
+  /* Barcode block — anchored to bottom-right of the trim area to mirror
+     the PDF export (which places it at `trimY + H - PAD_Y - barH - 3.5`,
+     right-aligned to `rightEdgeX - barcodeBlockW`). */
+  .sm-barcode {
+    position: absolute;
+    right: 5mm;
+    bottom: 4mm;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+  }
+  .sm-barcode svg {
+    display: block;
+    height: auto;
+  }
+
+  /* ─── Editable text ───────────────────────────────────────────── */
+  .editable {
+    outline: none;
+    border-radius: 2px;
+    transition: background .15s ease, box-shadow .15s ease;
+    cursor: text;
+    -webkit-user-modify: read-write-plaintext-only;
+  }
+  .editable:hover { background: rgba(0,0,0,.04); }
+  .editable:focus { background: rgba(0,0,0,.05); box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  .editable:empty::before {
+    content: attr(data-placeholder);
+    color: rgba(0,0,0,.3);
+  }
+
+  /* ─── Print styles (browser-side fallback only — jsPDF is the real export) ── */
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    html, body {
+      background: #fff !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      display: block !important;
+      min-height: 0 !important;
+    }
+    .shipping-mark {
+      margin: 0 !important;
+      box-shadow: none !important;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .twk-panel, .sm-row-remove, .sm-row-add, .sm-trim-guide { display: none !important; }
+    .editable { background: transparent !important; box-shadow: none !important; }
+  }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<header class="mobile-topbar" role="banner">
+  <span class="mobile-topbar-logo" aria-label="Vyke Create"></span>
+  <button class="mobile-topbar-help" type="button" aria-label="Quick start">?</button>
+</header>
+<div id="root"></div>
+
+<!-- Account / preset persistence layer. config.jsx initialises window.SUPABASE
+     (or leaves it null for the localStorage fallback path) BEFORE the auth /
+     presets / activity modules read it at call time. -->
+<script type="text/babel" src="config.jsx"></script>
+<script type="text/babel" src="auth.jsx"></script>
+<script type="text/babel" src="presets.jsx"></script>
+<script type="text/babel" src="activity.jsx"></script>
+
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="barcode.jsx"></script>
+<script type="text/babel" src="welcome.jsx"></script>
+<script type="text/babel" src="account-chip.jsx"></script>
+<script type="text/babel" src="presets-panel.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+
+<style>
+  #__standalone-tweaks-btn {
+    position: fixed; right: 16px; bottom: 16px;
+    z-index: 2147483645;
+    padding: 8px 14px;
+    border: 0; border-radius: 999px;
+    font: 600 12px/1 "Roboto", system-ui, sans-serif;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    display: none;
+  }
+
+  #__help-btn {
+    position: fixed; left: 16px; bottom: 16px;
+    z-index: 2147483645;
+    width: 36px; height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #9DC9E8, #7FB6DC);
+    color: #000;
+    font: 700 16px/1 "Roboto", system-ui, sans-serif;
+    cursor: pointer;
+    box-shadow:
+      0 6px 24px rgba(157, 201, 232, 0.35),
+      0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+    transition: transform .08s ease, box-shadow .15s ease;
+  }
+  #__help-btn:hover {
+    background: linear-gradient(180deg, #BCE0F2, #9DC9E8);
+    box-shadow: 0 8px 28px rgba(157, 201, 232, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.18) inset;
+    transform: translateY(-1px);
+  }
+  #__help-card {
+    position: fixed; left: 16px; bottom: 62px;
+    z-index: 2147483645;
+    width: 300px;
+    background: rgba(18, 19, 23, 0.88);
+    color: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.05) inset,
+      0 20px 60px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(157, 201, 232, 0.08);
+    font: 11.5px/1.45 "Inter", "Roboto", system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+    transform-origin: bottom left;
+    transition: opacity .14s ease, transform .14s ease;
+  }
+  #__help-card[hidden] {
+    display: block !important;
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+    pointer-events: none;
+  }
+  #__help-card .hc-hd {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px;
+    background:
+      linear-gradient(180deg, rgba(157, 201, 232, 0.10), rgba(157, 201, 232, 0) 80%),
+      linear-gradient(180deg, #0c0c11, #0a0a0e);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  #__help-card .hc-title {
+    color: #9DC9E8;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    font-size: 9.5px;
+    text-transform: uppercase;
+  }
+  #__help-card .hc-x {
+    appearance: none;
+    border: 0;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 14px; line-height: 1;
+    cursor: pointer;
+    transition: background .12s ease, color .12s ease;
+  }
+  #__help-card .hc-x:hover {
+    background: rgba(157, 201, 232, 0.18);
+    color: #fff;
+  }
+  #__help-card .hc-body { padding: 12px 14px 8px; }
+  #__help-card ul {
+    list-style: none;
+    margin: 0; padding: 0;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  #__help-card li {
+    display: grid;
+    grid-template-columns: 14px 1fr;
+    gap: 9px;
+    align-items: start;
+    color: rgba(255, 255, 255, 0.85);
+  }
+  #__help-card li::before {
+    content: "";
+    width: 6px; height: 6px;
+    margin-top: 5px;
+    border-radius: 50%;
+    background: #9DC9E8;
+    box-shadow: 0 0 0 3px rgba(157, 201, 232, 0.18);
+  }
+  #__help-card b { color: #fff; font-weight: 600; }
+  #__help-card code {
+    background: rgba(255, 255, 255, 0.08);
+    color: #9DC9E8;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font: 10.5px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  #__help-card .hc-ft {
+    margin-top: 4px;
+    padding: 10px 14px 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.35);
+    font-weight: 500;
+  }
+  #__help-card .hc-ft-sub {
+    display: block;
+    margin-top: 4px;
+    font-size: 8.5px;
+    letter-spacing: 0.22em;
+    color: rgba(255, 255, 255, 0.22);
+    font-weight: 400;
+  }
+
+  /* ─── Mobile (≤ 768px): topbar + fixed 30vh canvas + scroll Tweaks ─── */
+  @media (max-width: 768px) {
+    body {
+      display: block;
+      padding: 0;
+      overflow: hidden;
+      height: 100vh;
+    }
+    .mobile-topbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 12px;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 48px;
+      background:
+        linear-gradient(180deg, rgba(157, 201, 232, 0.10), rgba(157, 201, 232, 0) 80%),
+        linear-gradient(180deg, #0c0c11, #0a0a0e);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      z-index: 30;
+    }
+    .mobile-topbar-logo {
+      flex: 1;
+      height: 28px;
+      background-image: url("vyke-create-logo.png");
+      background-size: contain;
+      background-position: left center;
+      background-repeat: no-repeat;
+      filter: drop-shadow(0 1px 10px rgba(157, 201, 232, 0.18));
+    }
+    .mobile-topbar-help {
+      appearance: none;
+      width: 32px; height: 32px;
+      border: 0;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #9DC9E8, #7FB6DC);
+      color: #000;
+      font: 700 14px/1 "Roboto", system-ui, sans-serif;
+      cursor: pointer;
+      box-shadow:
+        0 4px 14px rgba(157, 201, 232, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.14) inset;
+    }
+    .mobile-topbar-help:active { transform: translateY(1px); }
+    #root {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-top: calc(48px + 30vh);
+    }
+    .stage {
+      position: fixed !important;
+      top: 48px !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: auto !important;
+      height: 30vh !important;
+      transform: none !important;
+      z-index: 20;
+      background: #2b2d31;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .shipping-mark { flex-shrink: 0; }
+    .twk-panel {
+      position: static !important;
+      right: auto !important;
+      bottom: auto !important;
+      left: auto !important;
+      top: auto !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      height: auto !important;
+      max-height: none !important;
+      margin: 0 !important;
+      border-radius: 12px 12px 0 0 !important;
+      border-bottom: 0 !important;
+      transform: none !important;
+    }
+    .twk-panel .twk-hd { display: none !important; }
+    .twk-panel .twk-body {
+      max-height: none !important;
+      overflow: visible !important;
+      padding-bottom: 28px !important;
+    }
+    #__help-btn { display: none !important; }
+    #__standalone-tweaks-btn { display: none !important; }
+    .twk-panel .twk-x { display: none !important; }
+    #__help-card {
+      position: fixed !important;
+      top: 56px !important;
+      left: 12px !important;
+      right: 12px !important;
+      bottom: auto !important;
+      width: auto !important;
+      max-width: calc(100vw - 24px) !important;
+      transform-origin: top right;
+    }
+    #__help-card[hidden] { transform: translateY(-8px) scale(0.96); }
+
+    /* Mobile: the Advanced panel takes over the full viewport (minus the
+       48px topbar) — it's modal-like on small screens because there's no
+       room to dock it alongside the main Tweaks panel. */
+    .adv-panel {
+      position: fixed !important;
+      top: 48px !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: auto !important;
+      border-radius: 0 !important;
+      border-left: 0 !important;
+      border-top: 3px solid #9DC9E8;
+      z-index: 50;
+    }
+  }
+</style>
+<script>
+  (function () {
+    var btn = document.createElement("button");
+    btn.id = "__standalone-tweaks-btn";
+    btn.textContent = "✦  Tweaks";
+    btn.style.display = "none";
+    btn.addEventListener("click", function () {
+      window.postMessage({ type: "__activate_edit_mode" }, "*");
+    });
+    document.body.appendChild(btn);
+    var root = document.getElementById("root");
+    var syncFab = function () {
+      btn.style.display = document.querySelector(".twk-panel") ? "none" : "block";
+    };
+    if (root && "MutationObserver" in window) {
+      new MutationObserver(syncFab).observe(root, { childList: true, subtree: true });
+    }
+    setTimeout(function () {
+      window.postMessage({ type: "__activate_edit_mode" }, "*");
+      setTimeout(syncFab, 100);
+    }, 400);
+  })();
+
+  (function () {
+    var SEEN_KEY = "vykecreate.shippingmark.helpSeen.v1";
+    var card = document.createElement("div");
+    card.id = "__help-card";
+    card.hidden = true;
+    card.setAttribute("role", "dialog");
+    card.setAttribute("aria-label", "Quick start");
+    card.innerHTML = ''
+      + '<div class="hc-hd">'
+      +   '<span class="hc-title">Quick start</span>'
+      +   '<button class="hc-x" type="button" aria-label="Close">×</button>'
+      + '</div>'
+      + '<div class="hc-body">'
+      +   '<ul>'
+      +     '<li><span><b>Click any text</b> — brand name, label, value — to edit it inline.</span></li>'
+      +     '<li><span>Open <b>Tweaks</b> (top-right) for size, bleed, barcode digits, icons, and logo.</span></li>'
+      +     '<li><span>The <b>EAN-13 barcode</b> is computed from your 12 or 13 digits and validated live.</span></li>'
+      +     '<li><span>Hover a text row → <code>×</code> deletes it. Hover the card → <b>+ Add row</b> appears.</span></li>'
+      +     '<li><span>Export with <b>Tweaks → Download as PDF</b> — exact mm dimensions, vector barcode, CMYK black.</span></li>'
+      +   '</ul>'
+      + '</div>'
+      + '<div class="hc-ft">Vyke Create · Shipping Marks<span class="hc-ft-sub">powered by XAFAI</span></div>';
+
+    var helpBtn = document.createElement("button");
+    helpBtn.id = "__help-btn";
+    helpBtn.type = "button";
+    helpBtn.setAttribute("aria-label", "Quick start");
+    helpBtn.setAttribute("aria-expanded", "false");
+    helpBtn.textContent = "?";
+
+    function setOpen(open) {
+      card.hidden = !open;
+      helpBtn.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) { try { localStorage.setItem(SEEN_KEY, "1"); } catch (e) {} }
+    }
+    helpBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      setOpen(card.hidden);
+    });
+    var topbarHelp = document.querySelector(".mobile-topbar-help");
+    if (topbarHelp) {
+      topbarHelp.addEventListener("click", function (e) {
+        e.stopPropagation();
+        setOpen(card.hidden);
+      });
+    }
+    card.querySelector(".hc-x").addEventListener("click", function () { setOpen(false); });
+    document.addEventListener("click", function (e) {
+      if (card.hidden) return;
+      if (card.contains(e.target) || helpBtn.contains(e.target)) return;
+      if (topbarHelp && topbarHelp.contains(e.target)) return;
+      setOpen(false);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !card.hidden) setOpen(false);
+    });
+
+    document.body.appendChild(card);
+    document.body.appendChild(helpBtn);
+
+    var seen = false;
+    try { seen = localStorage.getItem(SEEN_KEY) === "1"; } catch (e) {}
+    if (!seen) setTimeout(function () { setOpen(true); }, 900);
+  })();
+</script>
+</body>
+</html>
