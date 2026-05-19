@@ -1314,10 +1314,40 @@
     if (root && "MutationObserver" in window) {
       new MutationObserver(syncFab).observe(root, { childList: true, subtree: true });
     }
-    setTimeout(function () {
+    // Robust activation: the TweaksPanel only mounts after React has finished
+    // its initial render, which on slower devices (especially mobile Safari)
+    // can take well over 400 ms. A single fire-and-forget postMessage at a
+    // fixed delay races against React mount — if the listener isn't attached
+    // yet, the message is lost and the panel stays closed forever. On mobile
+    // there's no fallback button either (the FAB is hidden by CSS), so the
+    // entire editor would be unreachable.
+    //
+    // Two complementary safety nets below:
+    //   1. Listen for the panel's `__edit_mode_available` handshake (posted
+    //      from TweaksPanel's mount effect) and respond immediately — the
+    //      common-case fix that catches any mount delay.
+    //   2. Retry the activation message up to ~3 s in case the handshake is
+    //      also missed or the script runs after panel mount.
+    var activated = false;
+    var activate = function () {
+      if (activated) return;
       window.postMessage({ type: "__activate_edit_mode" }, "*");
-      setTimeout(syncFab, 100);
-    }, 400);
+    };
+    window.addEventListener("message", function (e) {
+      if (e && e.data && e.data.type === "__edit_mode_available") activate();
+    });
+    var tries = 0;
+    var poll = setInterval(function () {
+      if (document.querySelector(".twk-panel")) {
+        activated = true;
+        clearInterval(poll);
+        syncFab();
+        return;
+      }
+      activate();
+      if (++tries > 30) clearInterval(poll); // give up after ~3s
+    }, 100);
+    setTimeout(syncFab, 500);
   })();
 
   (function () {
