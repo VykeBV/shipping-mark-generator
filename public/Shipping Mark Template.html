@@ -43,15 +43,15 @@
      pan space is unbounded (just transform offsets). */
   .stage {
     /* Absolutely positioned to fill the viewport EXCEPT the right
-       336 px (panel area) and the top 56 px (header). The body's
+       320 px (panel sidebar) and the top 56 px (header). The body's
        dark background still extends behind both, so visually the
        canvas spans the full screen but the interactive surface
-       stays clear of the floating chrome. */
+       stays clear of the fixed chrome. */
     position: absolute;
     top: 56px;                    /* clear of the .vyke-header bar */
     bottom: 0;
     left: 0;
-    right: 336px;                 /* clear of the 320 px panel + 16 px right margin */
+    right: 320px;                 /* clear of the right-edge sidebar */
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -346,7 +346,7 @@
     position: fixed;
     bottom: 14px;
     left: 14px;
-    right: 352px;                /* clear of the 320 px Tweaks panel + gap */
+    right: 332px;                /* clear of the 320 px Tweaks panel + gap */
     margin-left: auto;
     margin-right: auto;
     width: fit-content;
@@ -402,22 +402,29 @@
 
   /* ─── Vyke Create dark Tweaks panel (identical to Data Sheet creator) ─ */
   .twk-panel {
-    background: rgba(18, 19, 23, 0.88) !important;
+    background: rgba(18, 19, 23, 0.94) !important;
     color: rgba(255, 255, 255, 0.92) !important;
-    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    /* Fixed right-edge SIDEBAR (not a floating window) — flush with
+       the viewport's right edge, full-height from below the header
+       to the very bottom. Only a left border separates it from the
+       canvas. No rounded right edge, no drop shadow on the right. */
+    border: 0 !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 0 !important;
     -webkit-backdrop-filter: blur(28px) saturate(140%) !important;
     backdrop-filter: blur(28px) saturate(140%) !important;
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.05) inset,
-      0 20px 60px rgba(0, 0, 0, 0.5),
-      0 0 0 1px rgba(157, 201, 232, 0.08) !important;
+    box-shadow: -12px 0 40px rgba(0, 0, 0, 0.30) !important;
     width: 320px !important;
     font: 11.5px/1.4 "Inter", "Roboto", system-ui, -apple-system, sans-serif !important;
-    /* Docked below the global header bar (56 px) with a small visual gap. */
-    top: 68px !important;
-    bottom: 16px !important;
+    /* Pinned to the right edge from the header bottom (56 px) down
+       to the viewport bottom. Tweaks-panel.jsx still sets
+       right/bottom inline, so override them with explicit values. */
+    right: 0 !important;
+    top: 56px !important;
+    bottom: 0 !important;
+    left: auto !important;
     height: auto !important;
-    max-height: calc(100vh - 84px) !important;
+    max-height: calc(100vh - 56px) !important;
   }
   /* Panel header (logo + close X) is now redundant — the global header
      bar shows both. Hide the entire .twk-hd block so the panel goes
@@ -449,6 +456,50 @@
     margin-top: 6px;
   }
   .twk-panel .twk-sect:first-child { border-top: 0; margin-top: 0; padding-top: 8px !important; }
+
+  /* ─── Collapsible section (accordion) ─────────────────────────────
+     Each TweakSection in the panel becomes a fold-open block: header
+     with the section label + chevron, click toggles the body. Open
+     state per section is remembered in sessionStorage so the panel
+     keeps the user's choice while they're editing. */
+  .twk-panel .twk-coll {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .twk-panel .twk-coll:last-child { border-bottom: 0; }
+  .twk-panel .twk-coll-hd {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: #9DC9E8;
+    width: 100%;
+    padding: 14px 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    font: 700 9.5px/1 "Inter", "Roboto", system-ui, -apple-system, sans-serif;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: color .12s;
+  }
+  .twk-panel .twk-coll-hd:hover { color: #BCE0F2; }
+  .twk-panel .twk-coll-label { flex: 1; text-align: left; }
+  .twk-panel .twk-coll-chev {
+    color: rgba(255, 255, 255, 0.40);
+    font-size: 10px;
+    transform: rotate(-90deg);
+    transition: transform .15s ease, color .12s;
+    margin-left: 8px;
+  }
+  .twk-panel .twk-coll.is-open .twk-coll-chev { transform: rotate(0deg); }
+  .twk-panel .twk-coll-hd:hover .twk-coll-chev { color: rgba(255, 255, 255, 0.65); }
+  .twk-panel .twk-coll-body {
+    padding: 2px 0 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
   .twk-panel .twk-lbl,
   .twk-panel .twk-lbl > span:first-child {
     color: rgba(255, 255, 255, 0.85) !important;
@@ -651,7 +702,7 @@
      surface. On mobile it docks as a full-width sheet at the top. */
   .adv-panel {
     position: fixed;
-    right: 336px;             /* 320 (.twk-panel width) + 16 gutter */
+    right: 320px;             /* 320 (.twk-panel width) + 16 gutter */
     /* Docked below the global header bar (56 px + 12 px gap) so it
        lines up with the Tweaks panel beside it. */
     top: 68px;
@@ -1046,7 +1097,7 @@
     position: fixed;
     top: 70px;                   /* clear of the 56 px header + 14 gap */
     left: 14px;
-    right: 352px;                /* 320 panel + 16 right margin + 16 gap */
+    right: 332px;                /* 320 panel + 16 right margin + 16 gap */
     margin-left: auto;
     margin-right: auto;
     width: fit-content;
@@ -1089,7 +1140,7 @@
     position: fixed;
     bottom: 60px;                /* above the centred canvas-nav pill */
     left: 14px;
-    right: 352px;                /* clear of the 320 px Tweaks panel + gap */
+    right: 332px;                /* clear of the 320 px Tweaks panel + gap */
     margin-left: auto;
     margin-right: auto;
     width: fit-content;
@@ -1676,18 +1727,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=28"></script>
-<script type="text/babel" src="auth.jsx?v=28"></script>
-<script type="text/babel" src="presets.jsx?v=28"></script>
-<script type="text/babel" src="activity.jsx?v=28"></script>
+<script type="text/babel" src="config.jsx?v=29"></script>
+<script type="text/babel" src="auth.jsx?v=29"></script>
+<script type="text/babel" src="presets.jsx?v=29"></script>
+<script type="text/babel" src="activity.jsx?v=29"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=28"></script>
-<script type="text/babel" src="icons.jsx?v=28"></script>
-<script type="text/babel" src="barcode.jsx?v=28"></script>
-<script type="text/babel" src="welcome.jsx?v=28"></script>
-<script type="text/babel" src="account-chip.jsx?v=28"></script>
-<script type="text/babel" src="presets-panel.jsx?v=28"></script>
-<script type="text/babel" src="app.jsx?v=28"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=29"></script>
+<script type="text/babel" src="icons.jsx?v=29"></script>
+<script type="text/babel" src="barcode.jsx?v=29"></script>
+<script type="text/babel" src="welcome.jsx?v=29"></script>
+<script type="text/babel" src="account-chip.jsx?v=29"></script>
+<script type="text/babel" src="presets-panel.jsx?v=29"></script>
+<script type="text/babel" src="app.jsx?v=29"></script>
 
 <style>
   #__standalone-tweaks-btn {

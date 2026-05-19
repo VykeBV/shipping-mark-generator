@@ -300,11 +300,18 @@ function TweaksPanel({ title = 'Tweaks', noDeckControls = false, children }) {
                   onClick={dismiss}>✕</button>
         </div>
         <div className="twk-body">
-          {children}
+          {/* Auto-group flat children by <TweakSection label="…" />
+              markers into collapsible groups. Items appearing before
+              the first marker stay always-visible at the top. */}
+          {groupChildrenByTweakSection(children).map((g, i) => (
+            <CollapsibleSection key={g.label || ('__pre_' + i)} label={g.label}>
+              {g.items}
+            </CollapsibleSection>
+          ))}
           {hasDeckStage && railEnabled && !noDeckControls && (
-            <TweakSection label="Deck">
+            <CollapsibleSection label="Deck">
               <TweakToggle label="Thumbnail rail" value={railVisible} onChange={toggleRail} />
-            </TweakSection>
+            </CollapsibleSection>
           )}
         </div>
       </div>
@@ -315,12 +322,88 @@ function TweaksPanel({ title = 'Tweaks', noDeckControls = false, children }) {
 // ── Layout helpers ──────────────────────────────────────────────────────────
 
 function TweakSection({ label, children }) {
+  // Marker-only when called without children (the panel auto-groups
+  // subsequent siblings into collapsible blocks — see TweaksPanel
+  // below). When children ARE passed (rare, e.g. legacy nested use),
+  // we render in place so the old API keeps working.
+  if (children == null) return <div className="twk-sect">{label}</div>;
   return (
     <>
       <div className="twk-sect">{label}</div>
       {children}
     </>
   );
+}
+
+// ── Collapsible section ────────────────────────────────────────────────────
+// Internal helper used by TweaksPanel to wrap items between
+// TweakSection markers into a foldable group with a clickable header
+// and chevron. Defaults open; remembers per-label state in
+// sessionStorage so the user's collapse choices persist while
+// they're navigating the editor.
+function CollapsibleSection({ label, defaultOpen = true, storageKey, children }) {
+  const k = storageKey || ('twk-coll-' + (label || '').toLowerCase().replace(/\s+/g, '-'));
+  const [open, setOpen] = React.useState(() => {
+    try {
+      const v = sessionStorage.getItem(k);
+      if (v === '0') return false;
+      if (v === '1') return true;
+    } catch (e) { /* sandboxed: fall through */ }
+    return defaultOpen;
+  });
+  const toggle = () => {
+    setOpen((prev) => {
+      const next = !prev;
+      try { sessionStorage.setItem(k, next ? '1' : '0'); } catch (e) {}
+      return next;
+    });
+  };
+  if (label == null) return <>{children}</>;
+  return (
+    <div className={'twk-coll' + (open ? ' is-open' : '')}>
+      <button
+        type="button"
+        className="twk-coll-hd"
+        onClick={toggle}
+        aria-expanded={open ? 'true' : 'false'}
+      >
+        <span className="twk-coll-label">{label}</span>
+        <span className="twk-coll-chev" aria-hidden="true">▾</span>
+      </button>
+      {open && <div className="twk-coll-body">{children}</div>}
+    </div>
+  );
+}
+
+// Walk the panel's children, find <TweakSection label="..." /> markers,
+// and group every following sibling into a CollapsibleSection until
+// the next marker. Items rendered BEFORE any section marker are
+// emitted as-is (no collapsible wrapper) so things like the account
+// chip at the top of the panel stay always-visible.
+function groupChildrenByTweakSection(children) {
+  const items = React.Children.toArray(children);
+  const groups = [];
+  let pre = [];
+  let current = null;
+  for (const node of items) {
+    const isMarker = node && node.type === TweakSection &&
+                     (node.props.children == null);
+    if (isMarker) {
+      if (current) groups.push(current);
+      else if (pre.length) {
+        groups.push({ label: null, items: pre.slice() });
+        pre = [];
+      }
+      current = { label: node.props.label, items: [] };
+    } else if (current) {
+      current.items.push(node);
+    } else {
+      pre.push(node);
+    }
+  }
+  if (pre.length && !current) groups.push({ label: null, items: pre });
+  if (current) groups.push(current);
+  return groups;
 }
 
 function TweakRow({ label, value, children, inline = false }) {
