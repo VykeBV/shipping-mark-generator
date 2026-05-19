@@ -24,22 +24,36 @@
       radial-gradient(ellipse 80% 50% at 50% 0%, rgba(157,201,232,.05), transparent 60%),
       #2b2d31;
     color: #fff;
+    /* Flex with `align-items: stretch` so the canvas (.stage) gets the
+       FULL body content area (was previously align-items: center which,
+       combined with overflow: auto + width:100% on the child, collapsed
+       the stage to 0 × 0 in some browsers via the flex min-width: auto
+       rule). The stage uses `flex: 1` below to grow into the space. */
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: stretch;
     padding: 16px 352px 16px 16px;
     overflow: hidden;
   }
-  /* Stage = the canvas viewport. Fills the body's content area. Uses
-     `overflow: auto` so when the card is zoomed beyond the viewport,
-     native scrollbars appear (and drag-pan re-uses the scroll
-     position). The `.stage-content` wrapper inside has explicit
-     scaled dimensions so the scrollable area grows with zoom. */
+  /* Stage = the canvas viewport. Fills the body's content area via
+     flex:1 (the body is `display: flex; align-items: stretch`, so
+     the stage grows in both axes). Uses `overflow: auto` + `min: 0`
+     so when the card is zoomed beyond the viewport, native scrollbars
+     appear (and drag-pan re-uses the scroll position). The
+     `.stage-content` wrapper inside has explicit scaled dimensions
+     so the scrollable area grows with zoom; flex layout on .stage
+     centres it via `margin: auto` until it overflows.
+
+     `min-width: 0; min-height: 0` is REQUIRED on the flex item:
+     without it, the default `min-width: auto` for flex items
+     prevents the stage from shrinking below its content's min size,
+     which with overflow: auto can collapse the layout. */
   .stage {
     position: relative;
-    width: 100%;
-    height: 100%;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
     overflow: auto;
+    display: flex;
     user-select: none;
     -webkit-user-select: none;
     /* Subtle dark scrollbars matching the rest of the panel chrome */
@@ -59,13 +73,15 @@
   /* stage-content: a sized wrapper whose dimensions equal the
      SCALED card. Its size is set in JS to (cardW × scale,
      cardH × scale). When smaller than .stage it centres via
-     margin: auto; when larger it overflows and triggers .stage
-     scrollbars. The card inside is scaled visually via CSS
-     transform with transform-origin at the top-left so its
-     rendered footprint sits exactly inside the wrapper. */
+     `margin: auto` (the flex-on-flex-item centring trick works
+     in BOTH axes when the parent is `display: flex`); when larger
+     it overflows and triggers .stage scrollbars. The card inside
+     is scaled visually via CSS transform with transform-origin at
+     the top-left so its rendered footprint sits exactly inside
+     the wrapper. */
   .stage-content {
     position: relative;
-    margin: auto;             /* centre when smaller than stage */
+    margin: auto;
     flex-shrink: 0;
   }
   .stage.is-panning { cursor: grabbing; }
@@ -1412,18 +1428,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=16"></script>
-<script type="text/babel" src="auth.jsx?v=16"></script>
-<script type="text/babel" src="presets.jsx?v=16"></script>
-<script type="text/babel" src="activity.jsx?v=16"></script>
+<script type="text/babel" src="config.jsx?v=17"></script>
+<script type="text/babel" src="auth.jsx?v=17"></script>
+<script type="text/babel" src="presets.jsx?v=17"></script>
+<script type="text/babel" src="activity.jsx?v=17"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=16"></script>
-<script type="text/babel" src="icons.jsx?v=16"></script>
-<script type="text/babel" src="barcode.jsx?v=16"></script>
-<script type="text/babel" src="welcome.jsx?v=16"></script>
-<script type="text/babel" src="account-chip.jsx?v=16"></script>
-<script type="text/babel" src="presets-panel.jsx?v=16"></script>
-<script type="text/babel" src="app.jsx?v=16"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=17"></script>
+<script type="text/babel" src="icons.jsx?v=17"></script>
+<script type="text/babel" src="barcode.jsx?v=17"></script>
+<script type="text/babel" src="welcome.jsx?v=17"></script>
+<script type="text/babel" src="account-chip.jsx?v=17"></script>
+<script type="text/babel" src="presets-panel.jsx?v=17"></script>
+<script type="text/babel" src="app.jsx?v=17"></script>
 
 <style>
   #__standalone-tweaks-btn {
