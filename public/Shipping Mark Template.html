@@ -102,34 +102,57 @@
   }
   .vyke-header-spacer { flex: 1; }
 
-  /* Export menu — a single dark button that opens a popover with
-     primary + secondary export actions. */
+  /* Shared header-button shape — every interactive element in the
+     header (Presets, Export, Account chip) follows the same height,
+     border-radius, padding, and font so they align in a clean row.
+     Variants below only change the colour treatment. */
   .vyke-export-wrap { position: relative; }
-  .vyke-export-trigger {
-    appearance: none;
-    border: 1px solid rgba(157, 201, 232, 0.32);
-    background: rgba(157, 201, 232, 0.10);
-    color: #cfe4f3;
+  .vyke-header-btn,
+  .vyke-export-trigger,
+  .vyke-header .vyke-acc-chip {
+    box-sizing: border-box;
     height: 36px;
     padding: 0 14px;
     border-radius: 8px;
-    font: 600 12px/1 inherit;
-    cursor: pointer;
+    border: 1px solid transparent;
+    font: 500 12px/1 "Inter", "Roboto", system-ui, -apple-system, sans-serif;
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    transition: background .12s, border-color .12s;
+    cursor: pointer;
+    transition: background .12s ease, border-color .12s ease, color .12s ease;
+    /* Subtle, on-brand focus ring instead of the browser default
+       (which extends past the box and breaks visual alignment). */
+    outline: none;
+  }
+  .vyke-header-btn:focus-visible,
+  .vyke-export-trigger:focus-visible,
+  .vyke-header .vyke-acc-chip:focus-visible {
+    box-shadow: 0 0 0 2px rgba(157, 201, 232, 0.55);
+    border-color: rgba(157, 201, 232, 0.55);
+  }
+
+  /* Primary action — blue-accent Export button. */
+  .vyke-export-trigger {
+    border-color: rgba(157, 201, 232, 0.32);
+    background: rgba(157, 201, 232, 0.10);
+    color: #cfe4f3;
+    font-weight: 600;
   }
   .vyke-export-trigger:hover {
     background: rgba(157, 201, 232, 0.18);
     border-color: rgba(157, 201, 232, 0.55);
   }
-  .vyke-export-trigger svg {
+  .vyke-export-trigger svg,
+  .vyke-header-btn svg {
     width: 14px; height: 14px;
+    flex-shrink: 0;
   }
-  .vyke-export-trigger .vyke-export-chev {
+  .vyke-export-trigger .vyke-export-chev,
+  .vyke-header-btn .vyke-export-chev {
     width: 9px; height: 9px;
     opacity: 0.6;
+    margin-left: 2px;
   }
   .vyke-export-menu {
     position: absolute;
@@ -191,32 +214,21 @@
     margin-top: 2px;
   }
 
-  /* Secondary header button (used for the Presets trigger). Same
-     shape as the Export trigger but a more neutral fill so the
-     primary action (Export) still reads as the most important
-     thing in the header. */
+  /* Secondary header button (Presets). Same SHAPE as Export — the
+     shared block above sets height / padding / border-radius / font.
+     Only the colour treatment differs (neutral grey instead of blue
+     accent) so the primary action (Export) still reads as the most
+     important thing in the header. */
   .vyke-header-btn {
-    appearance: none;
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.10);
     background: rgba(255, 255, 255, 0.04);
     color: rgba(255, 255, 255, 0.88);
-    height: 36px;
-    padding: 0 14px;
-    border-radius: 8px;
-    font: 500 12px/1 inherit;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: background .12s, border-color .12s;
   }
   .vyke-header-btn:hover {
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.20);
     color: #fff;
   }
-  .vyke-header-btn svg { width: 14px; height: 14px; }
-  .vyke-header-btn .vyke-export-chev { width: 9px; height: 9px; opacity: 0.6; }
 
   /* Presets popover — wraps the existing PresetsPanel component
      (save row + scrollable preset list with thumbnails). Wider and
@@ -271,20 +283,24 @@
   .vyke-presets-menu .vyke-pre-time { color: rgba(255, 255, 255, 0.5); }
   .vyke-presets-menu .vyke-pre-empty { color: rgba(255, 255, 255, 0.55); }
 
-  /* Account chip inside the header: same dark glass tile but compact
-     and right-aligned (the existing .vyke-acc-* rules from
-     account-chip.jsx still drive the popover under it). */
+  /* Account chip inside the header — inherits the shared header-btn
+     shape above (height 36 / padding 14 / radius 8 / 12 px font).
+     We only need to override the colour treatment + override the
+     fullwidth .vyke-acc-chip default coming from account-chip.jsx. */
   .vyke-header .vyke-acc-wrap { width: auto; }
   .vyke-header .vyke-acc-chip {
     width: auto;
-    height: 36px;
-    padding: 0 12px 0 8px;
     background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
-    gap: 8px;
+    border-color: rgba(255, 255, 255, 0.10);
+    color: rgba(255, 255, 255, 0.88);
+    /* slightly tighter left padding so the avatar circle has room */
+    padding-left: 6px;
   }
-  .vyke-header .vyke-acc-chip:hover { background: rgba(255, 255, 255, 0.08); }
+  .vyke-header .vyke-acc-chip:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.20);
+    color: #fff;
+  }
   @media (max-width: 768px) {
     .stage {
       /* On mobile the panel docks at the bottom (no right reserve);
@@ -1660,18 +1676,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=27"></script>
-<script type="text/babel" src="auth.jsx?v=27"></script>
-<script type="text/babel" src="presets.jsx?v=27"></script>
-<script type="text/babel" src="activity.jsx?v=27"></script>
+<script type="text/babel" src="config.jsx?v=28"></script>
+<script type="text/babel" src="auth.jsx?v=28"></script>
+<script type="text/babel" src="presets.jsx?v=28"></script>
+<script type="text/babel" src="activity.jsx?v=28"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=27"></script>
-<script type="text/babel" src="icons.jsx?v=27"></script>
-<script type="text/babel" src="barcode.jsx?v=27"></script>
-<script type="text/babel" src="welcome.jsx?v=27"></script>
-<script type="text/babel" src="account-chip.jsx?v=27"></script>
-<script type="text/babel" src="presets-panel.jsx?v=27"></script>
-<script type="text/babel" src="app.jsx?v=27"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=28"></script>
+<script type="text/babel" src="icons.jsx?v=28"></script>
+<script type="text/babel" src="barcode.jsx?v=28"></script>
+<script type="text/babel" src="welcome.jsx?v=28"></script>
+<script type="text/babel" src="account-chip.jsx?v=28"></script>
+<script type="text/babel" src="presets-panel.jsx?v=28"></script>
+<script type="text/babel" src="app.jsx?v=28"></script>
 
 <style>
   #__standalone-tweaks-btn {
