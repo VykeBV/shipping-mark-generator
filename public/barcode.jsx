@@ -79,7 +79,7 @@
   //
   //   - Guard extension below data bars: 5 modules (the spec value).
   //   - Text top:  right under data bars, with a 1-module gap above.
-  //   - Text cap height: 8 modules.
+  //   - Text cap height: 8 modules (visible glyph height).
   //   - Text bottom therefore extends BELOW the guard bars by
   //     (1 + 8) − 5 = 4 modules — the "digits hang below guards"
   //     effect you see in real retail barcodes.
@@ -89,7 +89,13 @@
   // white space. This is the canonical look the user asked for.
   const GUARD_EXTENSION_MODULES = 5;
   const TEXT_GAP_MODULES        = 1;
-  const TEXT_HEIGHT_MODULES     = 8;
+  const TEXT_CAP_HEIGHT_MODULES = 8;
+  // SVG/CSS `font-size` is the em-square, not the visible cap height.
+  // For Helvetica / Courier / OCR-B-style fonts the cap height is
+  // ~0.7 × font-size, so we set font-size = capHeight / 0.7 ≈ 1.43 ×
+  // capHeight to make the RENDERED digits actually 8 modules tall.
+  // Without this compensation the digits come out ~30 % undersized.
+  const CAP_HEIGHT_TO_FONT_SIZE = 1 / 0.7;
 
   // OCR-B is the ISO-defined font for EAN-13 HRI; few browsers ship
   // it, so we declare it first and fall back through Courier (jsPDF
@@ -167,11 +173,14 @@
     const bars = getBars(digits, heightMm);
 
     const physWmm = TOTAL_MODULES * xDimMm;
-    const guardExtMm = includeText ? GUARD_EXTENSION_MODULES * xDimMm : 0;
-    const textGapMm = includeText ? TEXT_GAP_MODULES * xDimMm : 0;
-    const textHeightMm = includeText ? TEXT_HEIGHT_MODULES * xDimMm : 0;
+    const guardExtMm    = includeText ? GUARD_EXTENSION_MODULES * xDimMm : 0;
+    const textGapMm     = includeText ? TEXT_GAP_MODULES        * xDimMm : 0;
+    const capHeightMm   = includeText ? TEXT_CAP_HEIGHT_MODULES * xDimMm : 0;
     const guardBottomMm = heightMm + guardExtMm;
-    const textBottomMm  = heightMm + textGapMm + textHeightMm;
+    // Text occupies (gap + cap-height) physical mm below data bars;
+    // baseline sits at the BOTTOM of the cap area (digits have no
+    // descenders, so baseline ≈ bottom of visible glyph).
+    const textBottomMm  = heightMm + textGapMm + capHeightMm;
     const physHmm = Math.max(guardBottomMm, textBottomMm);
 
     // Render each bar as a <rect>. bwip-js bars are at cx=0..95 (module
@@ -209,8 +218,12 @@
     // guard extensions.
     let textEls = "";
     if (includeText) {
-      const baselineMm = heightMm + textGapMm + textHeightMm * 0.85;
-      const fontSizeMm = textHeightMm;
+      // Baseline sits at the bottom of the cap area (= textBottomMm).
+      // Font-size is scaled up so the RENDERED cap height equals the
+      // intended capHeightMm (= 8 modules). Without this scaling the
+      // digits would render at ~70 % of the intended height.
+      const baselineMm = textBottomMm;
+      const fontSizeMm = capHeightMm * CAP_HEIGHT_TO_FONT_SIZE;
       // Tiny extra tracking between digits keeps each character
       // visually aligned with its bar group.
       const letterSpacingMm = xDimMm * 0.25;
@@ -277,7 +290,7 @@
     // hangs a few modules below the guard bars in the canonical look.
     const physWmm = TOTAL_MODULES * xDimMm;
     const guardBottomMm = heightMm + (includeText ? GUARD_EXTENSION_MODULES * xDimMm : 0);
-    const textBottomMm  = heightMm + (includeText ? (TEXT_GAP_MODULES + TEXT_HEIGHT_MODULES) * xDimMm : 0);
+    const textBottomMm  = heightMm + (includeText ? (TEXT_GAP_MODULES + TEXT_CAP_HEIGHT_MODULES) * xDimMm : 0);
     const physHmm = Math.max(guardBottomMm, textBottomMm);
 
     await pdf.svg(svgEl, { x, y, width: physWmm, height: physHmm });
