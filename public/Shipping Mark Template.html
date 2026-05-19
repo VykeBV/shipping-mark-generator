@@ -84,8 +84,12 @@
     margin: auto;
     flex-shrink: 0;
   }
-  .stage.is-panning { cursor: grabbing; }
-  .stage:not(.is-panning):hover { cursor: grab; }
+  /* Cursor only shows grab/grabbing when the card is actually
+     larger than the viewport (i.e. zoomed in). At fit-to-view there's
+     nothing to pan, so the default cursor reads correctly as "click
+     to interact, don't drag". */
+  .stage.is-pannable:not(.is-panning):hover { cursor: grab; }
+  .stage.is-pannable.is-panning { cursor: grabbing; }
   /* When pointer is over an editable / button / input, restore normal cursor */
   .stage .editable:hover,
   .stage button:hover,
@@ -132,9 +136,13 @@
     min-width: 32px;
     transition: background .12s ease, color .12s ease;
   }
-  .canvas-nav button:hover {
+  .canvas-nav button:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.08);
     color: #fff;
+  }
+  .canvas-nav button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
   .canvas-nav .canvas-nav-pct {
     min-width: 52px;
@@ -1428,18 +1436,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=17"></script>
-<script type="text/babel" src="auth.jsx?v=17"></script>
-<script type="text/babel" src="presets.jsx?v=17"></script>
-<script type="text/babel" src="activity.jsx?v=17"></script>
+<script type="text/babel" src="config.jsx?v=18"></script>
+<script type="text/babel" src="auth.jsx?v=18"></script>
+<script type="text/babel" src="presets.jsx?v=18"></script>
+<script type="text/babel" src="activity.jsx?v=18"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=17"></script>
-<script type="text/babel" src="icons.jsx?v=17"></script>
-<script type="text/babel" src="barcode.jsx?v=17"></script>
-<script type="text/babel" src="welcome.jsx?v=17"></script>
-<script type="text/babel" src="account-chip.jsx?v=17"></script>
-<script type="text/babel" src="presets-panel.jsx?v=17"></script>
-<script type="text/babel" src="app.jsx?v=17"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=18"></script>
+<script type="text/babel" src="icons.jsx?v=18"></script>
+<script type="text/babel" src="barcode.jsx?v=18"></script>
+<script type="text/babel" src="welcome.jsx?v=18"></script>
+<script type="text/babel" src="account-chip.jsx?v=18"></script>
+<script type="text/babel" src="presets-panel.jsx?v=18"></script>
+<script type="text/babel" src="app.jsx?v=18"></script>
 
 <style>
   #__standalone-tweaks-btn {

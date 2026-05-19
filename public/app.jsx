@@ -1314,6 +1314,12 @@ function App() {
       // centres it; when larger, scrollbars appear.
       content.style.width  = (cw * totalScale) + "px";
       content.style.height = (ch * totalScale) + "px";
+      // Toggle a class that drives the cursor — only "grab" when the
+      // user actually has room to pan (zoom > 1). At zoom = 1 the
+      // card is fit-to-view and dragging would do nothing, so we
+      // show the default cursor for clarity.
+      const pannable = zoomRef.current > 1.001;
+      stage.classList.toggle("is-pannable", pannable);
     };
 
     apply();
@@ -1337,7 +1343,7 @@ function App() {
       e.preventDefault();
       const oldZoom = zoomRef.current;
       const delta = -e.deltaY / 1000;
-      const next = Math.max(0.25, Math.min(6, oldZoom * Math.exp(delta)));
+      const next = Math.max(1, Math.min(6, oldZoom * Math.exp(delta)));
       if (next === oldZoom) return;
       const rect = stage.getBoundingClientRect();
       // Cursor position inside the stage viewport (0..stage.clientWidth/Height).
@@ -1371,6 +1377,10 @@ function App() {
     const onDown = (e) => {
       if (e.target.closest(".editable, button, input, [contenteditable]")) return;
       if (e.target.closest(".canvas-nav, .vyke-dev-banner, .vyke-canvas-warning")) return;
+      // Only allow drag-pan when the card actually overflows the
+      // viewport (zoom > 1). At fit-to-view there's nothing to scroll
+      // to, so a "drag" would feel broken.
+      if (zoomRef.current <= 1.001) return;
       drag = {
         startX: e.clientX, startY: e.clientY,
         scrollL0: stage.scrollLeft, scrollT0: stage.scrollTop,
@@ -1415,11 +1425,11 @@ function App() {
   const zoomBy = useCallback((factor) => {
     const stage = stageRef.current;
     if (!stage) {
-      setZoom((z) => Math.max(0.25, Math.min(6, z * factor)));
+      setZoom((z) => Math.max(1, Math.min(6, z * factor)));
       return;
     }
     const oldZoom = zoomRef.current;
-    const next = Math.max(0.25, Math.min(6, oldZoom * factor));
+    const next = Math.max(1, Math.min(6, oldZoom * factor));
     if (next === oldZoom) return;
     const cx = stage.clientWidth  / 2;
     const cy = stage.clientHeight / 2;
@@ -1567,7 +1577,8 @@ function App() {
         <button
           type="button"
           onClick={() => zoomBy(1 / 1.25)}
-          title="Zoom out (or scroll down on the canvas)"
+          disabled={zoom <= 1.001}
+          title={zoom <= 1.001 ? "Already at fit-to-view" : "Zoom out (or scroll down on the canvas)"}
           aria-label="Zoom out"
         >−</button>
         <button
