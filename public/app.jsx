@@ -1271,29 +1271,32 @@ function App() {
     });
   }, [renderPageIntoPdf, setTweak]);
 
-  // ── Canvas navigation (fit-to-screen + zoom + native scroll pan) ──
+  // ── Canvas navigation (Illustrator-style: pan + zoom via transform) ──
   // The card is rendered at its real mm dimensions and visually
-  // scaled via CSS `transform: scale()` with `transform-origin: 0 0`.
-  // A `.stage-content` wrapper around the card has explicit
-  // dimensions equal to the SCALED card size (cw × scale,
-  // ch × scale), so when the user zooms past the viewport size the
-  // `.stage` container scrolls naturally — exactly what design tools
-  // do. We DON'T use a translate() for pan: drag-pan and wheel-zoom
-  // both manipulate `stage.scrollLeft` / `scrollTop`, which is more
-  // intuitive AND gets us free native scrollbars.
+  // positioned with ONE combined CSS transform:
+  //   translate(panX, panY) scale(fitScale × userZoom)
+  // No native scroll — we keep `.stage { overflow: hidden }` and let
+  // pan offsets move the card anywhere in viewport space, exactly
+  // like a design tool's infinite workspace.
+  //
+  // userZoom range is wide (0.1 – 6) so the user can shrink the card
+  // below fit OR zoom right in. Drag-pan works at every zoom level
+  // (no "only when zoomed in" gating). Wheel zoom is cursor-relative.
   const stageRef = useRef(null);
   const contentRef = useRef(null);
   const cardRef = useRef(null);
   const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
   const zoomRef = useRef(1);
+  const panRef = useRef({ x: 0, y: 0 });
   const fitScaleRef = useRef(1);
   useEffect(() => { zoomRef.current = zoom; }, [zoom]);
+  useEffect(() => { panRef.current = pan; }, [pan]);
 
   useEffect(() => {
     const stage = stageRef.current;
-    const content = contentRef.current;
     const card = cardRef.current;
-    if (!stage || !content || !card) return;
+    if (!stage || !card) return;
 
     const apply = () => {
       const isMobile = window.matchMedia("(max-width: 768px)").matches;
@@ -1306,20 +1309,11 @@ function App() {
       const fitScale = Math.min(avW / cw, avH / ch, maxFit);
       fitScaleRef.current = fitScale;
       const totalScale = fitScale * zoomRef.current;
-      // Visual scale via transform (cheap, GPU-accelerated).
-      card.style.transform = `scale(${totalScale})`;
-      card.style.transformOrigin = "0 0";
-      // Wrapper takes the SCALED layout size so the stage knows how
-      // much to scroll. When scaled size < stage, margin:auto in CSS
-      // centres it; when larger, scrollbars appear.
-      content.style.width  = (cw * totalScale) + "px";
-      content.style.height = (ch * totalScale) + "px";
-      // Toggle a class that drives the cursor — only "grab" when the
-      // user actually has room to pan (zoom > 1). At zoom = 1 the
-      // card is fit-to-view and dragging would do nothing, so we
-      // show the default cursor for clarity.
-      const pannable = zoomRef.current > 1.001;
-      stage.classList.toggle("is-pannable", pannable);
+      const { x: px, y: py } = panRef.current;
+      // Single transform: pan first then scale, both relative to the
+      // card's centre (which is already where flex centring places it).
+      card.style.transform = `translate(${px}px, ${py}px) scale(${totalScale})`;
+      card.style.transformOrigin = "center";
     };
 
     apply();
@@ -1328,14 +1322,14 @@ function App() {
     ro.observe(card);
     window.addEventListener("resize", apply);
     return () => { window.removeEventListener("resize", apply); ro.disconnect(); };
-  }, [zoom, t.widthMm, t.heightMm, t.bleedMm]);
+  }, [zoom, pan.x, pan.y, t.widthMm, t.heightMm, t.bleedMm]);
 
   // ── Wheel zoom (cursor-relative) ──────────────────────────────────
-  // Scroll or pinch zooms in/out, keeping whatever is under the
-  // cursor in the same screen position before and after. Math is on
-  // scroll coordinates now (not translate offsets): the document-
-  // space point under the cursor at the new scale should map to the
-  // same viewport pixel, so we solve for the new scrollLeft/Top.
+  // Scroll / pinch zooms keeping the point under the cursor anchored.
+  // Math: cursor at viewport-pixel (cx, cy) relative to stage centre.
+  // The card-space point under cursor is (cx − panX) / totalScale.
+  // Solve for newPan so the same point stays under the cursor at the
+  // new scale: newPan = cx − (cx − oldPan) × (newScale / oldScale).
   useEffect(() => {
     const stage = stageRef.current;
     if (!stage) return;
@@ -1343,33 +1337,27 @@ function App() {
       e.preventDefault();
       const oldZoom = zoomRef.current;
       const delta = -e.deltaY / 1000;
-      const next = Math.max(1, Math.min(6, oldZoom * Math.exp(delta)));
+      const next = Math.max(0.1, Math.min(6, oldZoom * Math.exp(delta)));
       if (next === oldZoom) return;
       const rect = stage.getBoundingClientRect();
-      // Cursor position inside the stage viewport (0..stage.clientWidth/Height).
-      const cx = e.clientX - rect.left;
-      const cy = e.clientY - rect.top;
-      // Document point under cursor BEFORE the scale change.
-      const docX = stage.scrollLeft + cx;
-      const docY = stage.scrollTop  + cy;
+      const cx = e.clientX - rect.left - rect.width / 2;
+      const cy = e.clientY - rect.top - rect.height / 2;
       const ratio = next / oldZoom;
-      setZoom(next);
-      // After React re-renders with the new scale, the content's
-      // dimensions update. Defer the scroll adjustment to the next
-      // frame so we read the new geometry.
-      requestAnimationFrame(() => {
-        stage.scrollLeft = Math.max(0, docX * ratio - cx);
-        stage.scrollTop  = Math.max(0, docY * ratio - cy);
+      const oldPan = panRef.current;
+      setPan({
+        x: cx - (cx - oldPan.x) * ratio,
+        y: cy - (cy - oldPan.y) * ratio,
       });
+      setZoom(next);
     };
     stage.addEventListener("wheel", onWheel, { passive: false });
     return () => stage.removeEventListener("wheel", onWheel);
   }, []);
 
-  // ── Click-and-drag pan (Figma-style) ──────────────────────────────
-  // Manipulates stage.scrollLeft/Top directly so the visual result
-  // matches what scrollbars do. Skips drag when the pointer goes
-  // down on editable text / floating UI so editing still works.
+  // ── Click-and-drag pan (always available, any zoom) ───────────────
+  // Like Illustrator's hand tool: drag anywhere on the canvas to
+  // reposition the card. Skips drag when the pointer goes down on
+  // editable text / floating UI so editing still works.
   useEffect(() => {
     const stage = stageRef.current;
     if (!stage) return;
@@ -1377,21 +1365,19 @@ function App() {
     const onDown = (e) => {
       if (e.target.closest(".editable, button, input, [contenteditable]")) return;
       if (e.target.closest(".canvas-nav, .vyke-dev-banner, .vyke-canvas-warning")) return;
-      // Only allow drag-pan when the card actually overflows the
-      // viewport (zoom > 1). At fit-to-view there's nothing to scroll
-      // to, so a "drag" would feel broken.
-      if (zoomRef.current <= 1.001) return;
       drag = {
         startX: e.clientX, startY: e.clientY,
-        scrollL0: stage.scrollLeft, scrollT0: stage.scrollTop,
+        panX0: panRef.current.x, panY0: panRef.current.y,
       };
       stage.classList.add("is-panning");
       try { e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId); } catch {}
     };
     const onMove = (e) => {
       if (!drag) return;
-      stage.scrollLeft = drag.scrollL0 - (e.clientX - drag.startX);
-      stage.scrollTop  = drag.scrollT0 - (e.clientY - drag.startY);
+      setPan({
+        x: drag.panX0 + (e.clientX - drag.startX),
+        y: drag.panY0 + (e.clientY - drag.startY),
+      });
     };
     const onUp = () => {
       if (!drag) return;
@@ -1410,37 +1396,15 @@ function App() {
     };
   }, []);
 
-  // Reset zoom + scroll to default fit-to-screen, centred view.
+  // Reset to default centred fit-to-view: zoom 100 %, pan 0,0.
   const resetView = useCallback(() => {
     setZoom(1);
-    requestAnimationFrame(() => {
-      const stage = stageRef.current;
-      if (!stage) return;
-      stage.scrollLeft = (stage.scrollWidth  - stage.clientWidth)  / 2;
-      stage.scrollTop  = (stage.scrollHeight - stage.clientHeight) / 2;
-    });
+    setPan({ x: 0, y: 0 });
   }, []);
   // Programmatic zoom (used by +/- buttons). Zooms around the
-  // current viewport centre so the centred content stays in place.
+  // viewport centre — keeps the centred content in place.
   const zoomBy = useCallback((factor) => {
-    const stage = stageRef.current;
-    if (!stage) {
-      setZoom((z) => Math.max(1, Math.min(6, z * factor)));
-      return;
-    }
-    const oldZoom = zoomRef.current;
-    const next = Math.max(1, Math.min(6, oldZoom * factor));
-    if (next === oldZoom) return;
-    const cx = stage.clientWidth  / 2;
-    const cy = stage.clientHeight / 2;
-    const docX = stage.scrollLeft + cx;
-    const docY = stage.scrollTop  + cy;
-    const ratio = next / oldZoom;
-    setZoom(next);
-    requestAnimationFrame(() => {
-      stage.scrollLeft = Math.max(0, docX * ratio - cx);
-      stage.scrollTop  = Math.max(0, docY * ratio - cy);
-    });
+    setZoom((z) => Math.max(0.1, Math.min(6, z * factor)));
   }, []);
 
   // Enabled icons = built-ins (in canonical ICON_ORDER) + any custom uploads
@@ -1577,8 +1541,8 @@ function App() {
         <button
           type="button"
           onClick={() => zoomBy(1 / 1.25)}
-          disabled={zoom <= 1.001}
-          title={zoom <= 1.001 ? "Already at fit-to-view" : "Zoom out (or scroll down on the canvas)"}
+          disabled={zoom <= 0.11}
+          title={zoom <= 0.11 ? "Already at minimum zoom" : "Zoom out (or scroll down on the canvas)"}
           aria-label="Zoom out"
         >−</button>
         <button

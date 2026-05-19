@@ -34,62 +34,39 @@
     padding: 16px 352px 16px 16px;
     overflow: hidden;
   }
-  /* Stage = the canvas viewport. Fills the body's content area via
-     flex:1 (the body is `display: flex; align-items: stretch`, so
-     the stage grows in both axes). Uses `overflow: auto` + `min: 0`
-     so when the card is zoomed beyond the viewport, native scrollbars
-     appear (and drag-pan re-uses the scroll position). The
-     `.stage-content` wrapper inside has explicit scaled dimensions
-     so the scrollable area grows with zoom; flex layout on .stage
-     centres it via `margin: auto` until it overflows.
-
-     `min-width: 0; min-height: 0` is REQUIRED on the flex item:
-     without it, the default `min-width: auto` for flex items
-     prevents the stage from shrinking below its content's min size,
-     which with overflow: auto can collapse the layout. */
+  /* Stage = the canvas viewport (Illustrator-style infinite workspace).
+     Fills the body's content area via flex:1; overflow: hidden clips
+     anything outside its bounds. The card inside floats freely — both
+     the translate (pan) and scale (zoom) are CSS transforms applied
+     to the .shipping-mark element directly, so the card can sit
+     anywhere in viewport space. There are no scrollbars because the
+     pan space is unbounded (just transform offsets). */
   .stage {
     position: relative;
     flex: 1;
     min-width: 0;
     min-height: 0;
-    overflow: auto;
+    overflow: hidden;
     display: flex;
+    align-items: center;        /* default-centre the card before any pan */
+    justify-content: center;
     user-select: none;
     -webkit-user-select: none;
-    /* Subtle dark scrollbars matching the rest of the panel chrome */
-    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
-    scrollbar-width: thin;
+    touch-action: none;          /* swallow browser pan/zoom for our own handlers */
   }
-  .stage::-webkit-scrollbar { width: 10px; height: 10px; }
-  .stage::-webkit-scrollbar-track { background: transparent; }
-  .stage::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 5px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-  }
-  .stage::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.30); background-clip: content-box; }
-
-  /* stage-content: a sized wrapper whose dimensions equal the
-     SCALED card. Its size is set in JS to (cardW × scale,
-     cardH × scale). When smaller than .stage it centres via
-     `margin: auto` (the flex-on-flex-item centring trick works
-     in BOTH axes when the parent is `display: flex`); when larger
-     it overflows and triggers .stage scrollbars. The card inside
-     is scaled visually via CSS transform with transform-origin at
-     the top-left so its rendered footprint sits exactly inside
-     the wrapper. */
   .stage-content {
+    /* No-op wrapper kept so the JSX structure stays stable across
+       refactors. transform-origin: center matches the flex-centred
+       default position, so zoom-from-centre feels natural before any
+       pan offsets are applied. */
     position: relative;
-    margin: auto;
     flex-shrink: 0;
   }
-  /* Cursor only shows grab/grabbing when the card is actually
-     larger than the viewport (i.e. zoomed in). At fit-to-view there's
-     nothing to pan, so the default cursor reads correctly as "click
-     to interact, don't drag". */
-  .stage.is-pannable:not(.is-panning):hover { cursor: grab; }
-  .stage.is-pannable.is-panning { cursor: grabbing; }
+  /* Grab cursor is always available — drag-pan works at every zoom
+     level, just like Illustrator. The card can be moved anywhere
+     regardless of whether it's bigger or smaller than the viewport. */
+  .stage:not(.is-panning):hover { cursor: grab; }
+  .stage.is-panning { cursor: grabbing; }
   /* When pointer is over an editable / button / input, restore normal cursor */
   .stage .editable:hover,
   .stage button:hover,
@@ -1436,18 +1413,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=18"></script>
-<script type="text/babel" src="auth.jsx?v=18"></script>
-<script type="text/babel" src="presets.jsx?v=18"></script>
-<script type="text/babel" src="activity.jsx?v=18"></script>
+<script type="text/babel" src="config.jsx?v=19"></script>
+<script type="text/babel" src="auth.jsx?v=19"></script>
+<script type="text/babel" src="presets.jsx?v=19"></script>
+<script type="text/babel" src="activity.jsx?v=19"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=18"></script>
-<script type="text/babel" src="icons.jsx?v=18"></script>
-<script type="text/babel" src="barcode.jsx?v=18"></script>
-<script type="text/babel" src="welcome.jsx?v=18"></script>
-<script type="text/babel" src="account-chip.jsx?v=18"></script>
-<script type="text/babel" src="presets-panel.jsx?v=18"></script>
-<script type="text/babel" src="app.jsx?v=18"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=19"></script>
+<script type="text/babel" src="icons.jsx?v=19"></script>
+<script type="text/babel" src="barcode.jsx?v=19"></script>
+<script type="text/babel" src="welcome.jsx?v=19"></script>
+<script type="text/babel" src="account-chip.jsx?v=19"></script>
+<script type="text/babel" src="presets-panel.jsx?v=19"></script>
+<script type="text/babel" src="app.jsx?v=19"></script>
 
 <style>
   #__standalone-tweaks-btn {
