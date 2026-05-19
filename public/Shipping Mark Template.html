@@ -43,13 +43,12 @@
      pan space is unbounded (just transform offsets). */
   .stage {
     /* Absolutely positioned to fill the viewport EXCEPT the right
-       336 px (panel area). This guarantees the artboard centring is
-       in the visible area and can never overlap the Tweaks panel,
-       regardless of any flex / padding quirks. The body's dark
-       background still extends behind the panel, so visually the
-       canvas spans the full screen. */
+       336 px (panel area) and the top 56 px (header). The body's
+       dark background still extends behind both, so visually the
+       canvas spans the full screen but the interactive surface
+       stays clear of the floating chrome. */
     position: absolute;
-    top: 0;
+    top: 56px;                    /* clear of the .vyke-header bar */
     bottom: 0;
     left: 0;
     right: 336px;                 /* clear of the 320 px panel + 16 px right margin */
@@ -61,6 +60,145 @@
     -webkit-user-select: none;
     touch-action: none;
   }
+
+  /* ─── Top application header ─────────────────────────────────────
+     Fixed bar pinned to the top of the viewport. Holds the Vyke
+     Create logo on the left, the export menu and account chip on
+     the right. Replaces what used to live in the Tweaks panel
+     header + at the top/bottom of its body. Sits ABOVE all other
+     fixed UI so banners, warnings, zoom-nav etc. tuck under it. */
+  .vyke-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    background:
+      linear-gradient(180deg, rgba(157, 201, 232, 0.06), rgba(157, 201, 232, 0) 80%),
+      rgba(18, 19, 23, 0.92);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
+    font: 12px/1.4 "Inter", "Roboto", system-ui, -apple-system, sans-serif;
+  }
+  body.vyke-locked .vyke-header { filter: blur(3px) brightness(0.55); pointer-events: none; }
+  .vyke-header-logo {
+    width: 140px;
+    height: 32px;
+    background-image: url("vyke-create-logo.png");
+    background-size: contain;
+    background-position: left center;
+    background-repeat: no-repeat;
+    filter: drop-shadow(0 1px 10px rgba(157, 201, 232, 0.18));
+  }
+  .vyke-header-spacer { flex: 1; }
+
+  /* Export menu — a single dark button that opens a popover with
+     primary + secondary export actions. */
+  .vyke-export-wrap { position: relative; }
+  .vyke-export-trigger {
+    appearance: none;
+    border: 1px solid rgba(157, 201, 232, 0.32);
+    background: rgba(157, 201, 232, 0.10);
+    color: #cfe4f3;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 8px;
+    font: 600 12px/1 inherit;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background .12s, border-color .12s;
+  }
+  .vyke-export-trigger:hover {
+    background: rgba(157, 201, 232, 0.18);
+    border-color: rgba(157, 201, 232, 0.55);
+  }
+  .vyke-export-trigger svg {
+    width: 14px; height: 14px;
+  }
+  .vyke-export-trigger .vyke-export-chev {
+    width: 9px; height: 9px;
+    opacity: 0.6;
+  }
+  .vyke-export-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 280px;
+    background: rgba(18, 19, 23, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+    z-index: 41;
+  }
+  .vyke-export-menu[hidden] { display: none; }
+  .vyke-export-menu button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.88);
+    text-align: left;
+    padding: 9px 12px;
+    border-radius: 6px;
+    font: 500 12px/1.3 inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background .12s;
+  }
+  .vyke-export-menu button:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+  }
+  .vyke-export-menu button.is-primary {
+    background: rgba(157, 201, 232, 0.14);
+    color: #e7f1f8;
+  }
+  .vyke-export-menu button.is-primary:hover {
+    background: rgba(157, 201, 232, 0.22);
+  }
+  .vyke-export-menu .vyke-export-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.06);
+    margin: 4px 0;
+  }
+  .vyke-export-menu small {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 2px;
+  }
+
+  /* Account chip inside the header: same dark glass tile but compact
+     and right-aligned (the existing .vyke-acc-* rules from
+     account-chip.jsx still drive the popover under it). */
+  .vyke-header .vyke-acc-wrap { width: auto; }
+  .vyke-header .vyke-acc-chip {
+    width: auto;
+    height: 36px;
+    padding: 0 12px 0 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    gap: 8px;
+  }
+  .vyke-header .vyke-acc-chip:hover { background: rgba(255, 255, 255, 0.08); }
   @media (max-width: 768px) {
     .stage {
       /* On mobile the panel docks at the bottom (no right reserve);
@@ -173,28 +311,16 @@
       0 0 0 1px rgba(157, 201, 232, 0.08) !important;
     width: 320px !important;
     font: 11.5px/1.4 "Inter", "Roboto", system-ui, -apple-system, sans-serif !important;
+    /* Docked below the global header bar (56 px) with a small visual gap. */
+    top: 68px !important;
+    bottom: 16px !important;
+    height: auto !important;
+    max-height: calc(100vh - 84px) !important;
   }
-  .twk-panel .twk-hd {
-    background:
-      linear-gradient(180deg, rgba(157, 201, 232, 0.10), rgba(157, 201, 232, 0) 80%),
-      linear-gradient(180deg, #0c0c11, #0a0a0e);
-    height: 64px;
-    padding: 12px 14px !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    position: relative;
-    gap: 10px;
-  }
-  .twk-panel .twk-hd b {
-    flex: 1;
-    height: 100%;
-    background-image: url("vyke-create-logo.png");
-    background-size: contain;
-    background-position: left center;
-    background-repeat: no-repeat;
-    text-indent: -9999px;
-    overflow: hidden;
-    filter: drop-shadow(0 1px 10px rgba(157, 201, 232, 0.18));
-  }
+  /* Panel header (logo + close X) is now redundant — the global header
+     bar shows both. Hide the entire .twk-hd block so the panel goes
+     straight into its first content section. */
+  .twk-panel .twk-hd { display: none !important; }
   .twk-panel .twk-x {
     color: rgba(255, 255, 255, 0.55) !important;
     background: rgba(255, 255, 255, 0.04) !important;
@@ -814,7 +940,7 @@
      behind the panel. */
   .vyke-dev-banner {
     position: fixed;
-    top: 14px;
+    top: 70px;                   /* clear of the 56 px header + 14 gap */
     left: 14px;
     right: 352px;                /* 320 panel + 16 right margin + 16 gap */
     margin-left: auto;
@@ -1436,18 +1562,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=22"></script>
-<script type="text/babel" src="auth.jsx?v=22"></script>
-<script type="text/babel" src="presets.jsx?v=22"></script>
-<script type="text/babel" src="activity.jsx?v=22"></script>
+<script type="text/babel" src="config.jsx?v=23"></script>
+<script type="text/babel" src="auth.jsx?v=23"></script>
+<script type="text/babel" src="presets.jsx?v=23"></script>
+<script type="text/babel" src="activity.jsx?v=23"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=22"></script>
-<script type="text/babel" src="icons.jsx?v=22"></script>
-<script type="text/babel" src="barcode.jsx?v=22"></script>
-<script type="text/babel" src="welcome.jsx?v=22"></script>
-<script type="text/babel" src="account-chip.jsx?v=22"></script>
-<script type="text/babel" src="presets-panel.jsx?v=22"></script>
-<script type="text/babel" src="app.jsx?v=22"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=23"></script>
+<script type="text/babel" src="icons.jsx?v=23"></script>
+<script type="text/babel" src="barcode.jsx?v=23"></script>
+<script type="text/babel" src="welcome.jsx?v=23"></script>
+<script type="text/babel" src="account-chip.jsx?v=23"></script>
+<script type="text/babel" src="presets-panel.jsx?v=23"></script>
+<script type="text/babel" src="app.jsx?v=23"></script>
 
 <style>
   #__standalone-tweaks-btn {

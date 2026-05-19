@@ -375,6 +375,106 @@ async function logoToBlackPng(src, threshold = 200) {
 }
 
 // ─── Main App ────────────────────────────────────────────────────────────────
+// ─── HeaderBar ────────────────────────────────────────────────────────────────
+// Top application bar. Holds the Vyke Create logo on the left, an
+// "↓ Export" dropdown and the account chip on the right. Replaces
+// what used to live inside the Tweaks panel header / body so the
+// panel can focus purely on document editing.
+function HeaderBar({
+  user, onSignOut,
+  widthMm, heightMm, bleedMm, batchProgress,
+  onDownloadPdf, onExportCsv, onImportCsv, onBatchPdf, onResetState,
+}) {
+  const { useState, useEffect, useRef } = React;
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+  // Close the menu on outside click or Escape.
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const sizeSuffix = bleedMm
+    ? `${widthMm} × ${heightMm} mm + ${bleedMm} mm bleed`
+    : `${widthMm} × ${heightMm} mm`;
+  const pdfLabel = batchProgress
+    ? `Generating page ${batchProgress.i} / ${batchProgress.n}…`
+    : "Download as PDF";
+  const batchLabel = batchProgress
+    ? `Batch… ${batchProgress.i}/${batchProgress.n}`
+    : "Batch CSV → multi-page PDF";
+
+  const runAndClose = (fn) => () => { setOpen(false); fn && fn(); };
+
+  return (
+    <header className="vyke-header" role="banner">
+      <div className="vyke-header-logo" aria-label="Vyke Create" />
+      <div className="vyke-header-spacer" />
+
+      <div className="vyke-export-wrap" ref={wrapRef}>
+        <button
+          type="button"
+          className="vyke-export-trigger"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open ? "true" : "false"}
+          aria-haspopup="menu"
+        >
+          <svg viewBox="0 0 14 14" aria-hidden="true">
+            <path
+              fill="none" stroke="currentColor" strokeWidth="1.4"
+              strokeLinecap="round" strokeLinejoin="round"
+              d="M7 1v8.5 M3.5 6.5 7 10l3.5-3.5 M2 12.5h10"
+            />
+          </svg>
+          Export
+          <svg className="vyke-export-chev" viewBox="0 0 10 6" aria-hidden="true">
+            <path fill="currentColor" d="M0 0h10L5 6z" />
+          </svg>
+        </button>
+        <div className="vyke-export-menu" role="menu" hidden={!open}>
+          <button type="button" role="menuitem" className="is-primary"
+                  onClick={runAndClose(onDownloadPdf)}>
+            <span>
+              {pdfLabel}
+              <small>{sizeSuffix}</small>
+            </span>
+          </button>
+          <div className="vyke-export-divider" />
+          <button type="button" role="menuitem" onClick={runAndClose(onExportCsv)}>
+            Export CSV
+            <small>Save this mark as one row</small>
+          </button>
+          <button type="button" role="menuitem" onClick={runAndClose(onImportCsv)}>
+            Import CSV
+            <small>Load a single row from CSV</small>
+          </button>
+          <button type="button" role="menuitem" onClick={runAndClose(onBatchPdf)}>
+            {batchLabel}
+            <small>One page per CSV row</small>
+          </button>
+          <div className="vyke-export-divider" />
+          <button type="button" role="menuitem" onClick={runAndClose(onResetState)}>
+            Reset to defaults
+          </button>
+        </div>
+      </div>
+
+      {user && window.AccountChip && (
+        <window.AccountChip user={user} onSignOut={onSignOut} />
+      )}
+    </header>
+  );
+}
+
 function App() {
   const [t, setTweak] = useTweaks(DEFAULTS);
   // Advanced settings side-panel — opens to the left of the main Tweaks panel.
@@ -1749,9 +1849,27 @@ function App() {
       {/* Welcome / sign-in overlay — locks the editor until a user is registered. */}
       {!user && <Welcome onSignIn={setUser} />}
 
-      <TweaksPanel>
-        {user && <AccountChip user={user} onSignOut={handleSignOut} />}
+      {/* Top header bar — branding, export menu, account chip. Lives
+          OUTSIDE the Tweaks panel so it's always visible and present
+          on every screen size. Moved here from the panel header
+          (logo) + panel body (account chip) + panel export section,
+          giving the Tweaks panel a single focused responsibility:
+          editing the document. */}
+      <HeaderBar
+        user={user}
+        onSignOut={handleSignOut}
+        widthMm={t.widthMm}
+        heightMm={t.heightMm}
+        bleedMm={t.bleedMm}
+        batchProgress={batchProgress}
+        onDownloadPdf={downloadPdf}
+        onExportCsv={exportCsv}
+        onImportCsv={() => csvInputRef.current?.click()}
+        onBatchPdf={() => batchInputRef.current?.click()}
+        onResetState={resetState}
+      />
 
+      <TweaksPanel>
         <TweakSection label="Size & bleed" />
         {/* Display-unit selector. Stored value stays in mm internally so
             the layout / PDF / presets are unit-stable; this only changes
@@ -1967,25 +2085,9 @@ function App() {
           onChange={onPickIcon}
         />
 
-        <TweakSection label="Export" />
-        <TweakButton
-          label={
-            batchProgress
-              ? `Generating page ${batchProgress.i} / ${batchProgress.n}…`
-              : `Download as PDF (${t.widthMm} × ${t.heightMm} mm${t.bleedMm ? ` + ${t.bleedMm}mm bleed` : ""})`
-          }
-          onClick={downloadPdf}
-        />
-        <div style={{ display: "flex", gap: "6px" }}>
-          <TweakButton label="Export CSV" onClick={exportCsv} secondary />
-          <TweakButton label="Import CSV" onClick={() => csvInputRef.current?.click()} secondary />
-        </div>
-        <TweakButton
-          label={batchProgress ? `Batch… ${batchProgress.i}/${batchProgress.n}` : "Batch CSV → multi-page PDF"}
-          onClick={() => batchInputRef.current?.click()}
-          secondary
-        />
-        <TweakButton label="Reset to defaults" onClick={resetState} secondary />
+        {/* Export actions moved to the top header bar's ⬇ Export menu.
+            The hidden file <input>s for CSV/batch upload stay here
+            because the header's menu items click them via refs. */}
         <input
           ref={csvInputRef}
           type="file"
