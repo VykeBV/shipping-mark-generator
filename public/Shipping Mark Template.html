@@ -19,21 +19,20 @@
   html, body { margin: 0; padding: 0; }
   body {
     height: 100vh;
+    width: 100vw;
     font-family: "Roboto", system-ui, -apple-system, "Segoe UI", sans-serif;
     background:
       radial-gradient(ellipse 80% 50% at 50% 0%, rgba(157,201,232,.05), transparent 60%),
       #2b2d31;
     color: #fff;
-    /* No padding — the canvas (.stage) fills the ENTIRE viewport so
-       the dark workspace extends behind the floating Tweaks panel,
-       just like Illustrator / Figma. The panel sits on top via
-       position: fixed; the stage's own padding-right keeps the
-       artboard centred in the VISIBLE area (not hidden behind the
-       panel) — see the .stage rules below. */
-    display: flex;
-    align-items: stretch;
+    margin: 0;
     padding: 0;
     overflow: hidden;
+    position: relative;
+    /* Body background covers the FULL viewport (extends behind the
+       floating Tweaks panel). The interactive .stage is positioned
+       absolutely inside, inset from the right so it never overlaps
+       the panel. See .stage rules below. */
   }
   /* Stage = the canvas viewport (Illustrator-style infinite workspace).
      Fills the body's content area via flex:1; overflow: hidden clips
@@ -43,27 +42,33 @@
      anywhere in viewport space. There are no scrollbars because the
      pan space is unbounded (just transform offsets). */
   .stage {
-    position: relative;
-    flex: 1;
-    min-width: 0;
-    min-height: 0;
+    /* Absolutely positioned to fill the viewport EXCEPT the right
+       336 px (panel area). This guarantees the artboard centring is
+       in the visible area and can never overlap the Tweaks panel,
+       regardless of any flex / padding quirks. The body's dark
+       background still extends behind the panel, so visually the
+       canvas spans the full screen. */
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 336px;                 /* clear of the 320 px panel + 16 px right margin */
     overflow: hidden;
     display: flex;
-    align-items: center;        /* default-centre the card before any pan */
+    align-items: center;
     justify-content: center;
     user-select: none;
     -webkit-user-select: none;
-    touch-action: none;          /* swallow browser pan/zoom for our own handlers */
-    /* Stage SPANS the full viewport (body has padding: 0). The
-       padding-right reserves room for the floating Tweaks panel
-       (320 px width + 16 px right margin = 336 px) so the artboard
-       flex-centres in the VISIBLE area (left of the panel) instead
-       of behind it. The stage's dark background still extends under
-       the panel — that's the design-tool aesthetic the user asked for. */
-    padding-right: 336px;
+    touch-action: none;
   }
   @media (max-width: 768px) {
-    .stage { padding-right: 0; }   /* no panel on mobile */
+    .stage {
+      /* On mobile the panel docks at the bottom (no right reserve);
+         the existing mobile media query further down overrides this
+         with `position: fixed; top: 48px; height: 30vh` for the
+         topbar layout. */
+      right: 0;
+    }
   }
   /* The shipping-mark card is the only flow child of .stage and gets
      flex-centred. flex-shrink: 0 keeps it at its natural mm size even
@@ -1431,18 +1436,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=21"></script>
-<script type="text/babel" src="auth.jsx?v=21"></script>
-<script type="text/babel" src="presets.jsx?v=21"></script>
-<script type="text/babel" src="activity.jsx?v=21"></script>
+<script type="text/babel" src="config.jsx?v=22"></script>
+<script type="text/babel" src="auth.jsx?v=22"></script>
+<script type="text/babel" src="presets.jsx?v=22"></script>
+<script type="text/babel" src="activity.jsx?v=22"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=21"></script>
-<script type="text/babel" src="icons.jsx?v=21"></script>
-<script type="text/babel" src="barcode.jsx?v=21"></script>
-<script type="text/babel" src="welcome.jsx?v=21"></script>
-<script type="text/babel" src="account-chip.jsx?v=21"></script>
-<script type="text/babel" src="presets-panel.jsx?v=21"></script>
-<script type="text/babel" src="app.jsx?v=21"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=22"></script>
+<script type="text/babel" src="icons.jsx?v=22"></script>
+<script type="text/babel" src="barcode.jsx?v=22"></script>
+<script type="text/babel" src="welcome.jsx?v=22"></script>
+<script type="text/babel" src="account-chip.jsx?v=22"></script>
+<script type="text/babel" src="presets-panel.jsx?v=22"></script>
+<script type="text/babel" src="app.jsx?v=22"></script>
 
 <style>
   #__standalone-tweaks-btn {
