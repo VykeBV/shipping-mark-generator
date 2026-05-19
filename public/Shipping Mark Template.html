@@ -54,19 +54,26 @@
     -webkit-user-select: none;
     touch-action: none;          /* swallow browser pan/zoom for our own handlers */
   }
-  .stage-content {
-    /* No-op wrapper kept so the JSX structure stays stable across
-       refactors. transform-origin: center matches the flex-centred
-       default position, so zoom-from-centre feels natural before any
-       pan offsets are applied. */
-    position: relative;
-    flex-shrink: 0;
-  }
-  /* Grab cursor is always available — drag-pan works at every zoom
-     level, just like Illustrator. The card can be moved anywhere
-     regardless of whether it's bigger or smaller than the viewport. */
-  .stage:not(.is-panning):hover { cursor: grab; }
-  .stage.is-panning { cursor: grabbing; }
+  /* The shipping-mark card is the only flow child of .stage and gets
+     flex-centred. flex-shrink: 0 keeps it at its natural mm size even
+     when the stage shrinks below the card's intrinsic dimensions
+     (otherwise flex would compress it). */
+  .stage > .shipping-mark { flex-shrink: 0; }
+
+  /* Cursor states:
+     - Default canvas hover: grab (you can drag the empty area).
+     - Space held: grab cursor everywhere on the canvas, even over
+       editable text — the spacebar puts us in "hand tool" mode and
+       the cursor reflects that.
+     - Actively panning: grabbing.
+     The hover rule deliberately doesn't fight :focus or text-cursor
+     states inside .editable elements; .is-space-held overrides those
+     via the descendant selector. */
+  .stage:not(.is-panning):not(.is-space-held):hover { cursor: grab; }
+  .stage.is-space-held,
+  .stage.is-space-held * { cursor: grab !important; }
+  .stage.is-panning,
+  .stage.is-panning * { cursor: grabbing !important; }
   /* When pointer is over an editable / button / input, restore normal cursor */
   .stage .editable:hover,
   .stage button:hover,
@@ -1413,18 +1420,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=19"></script>
-<script type="text/babel" src="auth.jsx?v=19"></script>
-<script type="text/babel" src="presets.jsx?v=19"></script>
-<script type="text/babel" src="activity.jsx?v=19"></script>
+<script type="text/babel" src="config.jsx?v=20"></script>
+<script type="text/babel" src="auth.jsx?v=20"></script>
+<script type="text/babel" src="presets.jsx?v=20"></script>
+<script type="text/babel" src="activity.jsx?v=20"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=19"></script>
-<script type="text/babel" src="icons.jsx?v=19"></script>
-<script type="text/babel" src="barcode.jsx?v=19"></script>
-<script type="text/babel" src="welcome.jsx?v=19"></script>
-<script type="text/babel" src="account-chip.jsx?v=19"></script>
-<script type="text/babel" src="presets-panel.jsx?v=19"></script>
-<script type="text/babel" src="app.jsx?v=19"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=20"></script>
+<script type="text/babel" src="icons.jsx?v=20"></script>
+<script type="text/babel" src="barcode.jsx?v=20"></script>
+<script type="text/babel" src="welcome.jsx?v=20"></script>
+<script type="text/babel" src="account-chip.jsx?v=20"></script>
+<script type="text/babel" src="presets-panel.jsx?v=20"></script>
+<script type="text/babel" src="app.jsx?v=20"></script>
 
 <style>
   #__standalone-tweaks-btn {

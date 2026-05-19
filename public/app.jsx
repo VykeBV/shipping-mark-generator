@@ -1283,13 +1283,16 @@ function App() {
   // below fit OR zoom right in. Drag-pan works at every zoom level
   // (no "only when zoomed in" gating). Wheel zoom is cursor-relative.
   const stageRef = useRef(null);
-  const contentRef = useRef(null);
   const cardRef = useRef(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const zoomRef = useRef(1);
   const panRef = useRef({ x: 0, y: 0 });
   const fitScaleRef = useRef(1);
+  // Spacebar-held flag — when true, drag-pan works from anywhere on
+  // the canvas (incl. over editable elements). Like Illustrator's
+  // hand-tool toggle.
+  const spaceHeldRef = useRef(false);
   useEffect(() => { zoomRef.current = zoom; }, [zoom]);
   useEffect(() => { panRef.current = pan; }, [pan]);
 
@@ -1310,8 +1313,10 @@ function App() {
       fitScaleRef.current = fitScale;
       const totalScale = fitScale * zoomRef.current;
       const { x: px, y: py } = panRef.current;
-      // Single transform: pan first then scale, both relative to the
-      // card's centre (which is already where flex centring places it).
+      // Single combined transform on the card. transform-origin: center
+      // means scale and translate are relative to the card's own
+      // centre, which (because the parent .stage is flex-centred) is
+      // also the centre of the viewport at pan=0.
       card.style.transform = `translate(${px}px, ${py}px) scale(${totalScale})`;
       card.style.transformOrigin = "center";
     };
@@ -1354,17 +1359,57 @@ function App() {
     return () => stage.removeEventListener("wheel", onWheel);
   }, []);
 
-  // ── Click-and-drag pan (always available, any zoom) ───────────────
-  // Like Illustrator's hand tool: drag anywhere on the canvas to
-  // reposition the card. Skips drag when the pointer goes down on
-  // editable text / floating UI so editing still works.
+  // ── Drag-pan (Illustrator hand-tool semantics) ────────────────────
+  // Three ways to pan, all updating the same pan state:
+  //   1. Click-and-drag on EMPTY canvas area (around the card, on the
+  //      bleed margin, etc.) — works because the target isn't an
+  //      editable element.
+  //   2. Spacebar + drag anywhere (incl. over editable text). The
+  //      cursor switches to "grab" the moment space is held so the
+  //      affordance is obvious. This is the Illustrator standard.
+  //   3. Middle-mouse-button drag anywhere. Same as spacebar+drag for
+  //      users with a 3-button mouse.
+  // Editable-content clicks still go through to the underlying field
+  // when none of the above modifiers are active.
   useEffect(() => {
     const stage = stageRef.current;
     if (!stage) return;
+
+    // Spacebar tracking → also flip the cursor class so the affordance
+    // is visible the instant the user holds space.
+    const onKeyDown = (e) => {
+      if (e.code !== "Space") return;
+      // Ignore when typing inside an editable / input field.
+      const active = document.activeElement;
+      if (active && (active.tagName === "INPUT" ||
+                     active.tagName === "TEXTAREA" ||
+                     active.isContentEditable)) return;
+      e.preventDefault();
+      if (spaceHeldRef.current) return;
+      spaceHeldRef.current = true;
+      stage.classList.add("is-space-held");
+    };
+    const onKeyUp = (e) => {
+      if (e.code !== "Space") return;
+      spaceHeldRef.current = false;
+      stage.classList.remove("is-space-held");
+    };
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+
     let drag = null;
     const onDown = (e) => {
-      if (e.target.closest(".editable, button, input, [contenteditable]")) return;
+      // Floating UI takes precedence — never pan from clicks on banner
+      // / warning / zoom-controls.
       if (e.target.closest(".canvas-nav, .vyke-dev-banner, .vyke-canvas-warning")) return;
+      const isMiddle = e.button === 1;
+      const isSpace  = spaceHeldRef.current;
+      const isOnEditable = !!e.target.closest(".editable, button, input, [contenteditable]");
+      // Default-button click over editable → let the click through.
+      // Anything else (middle-click, space-held, or click on empty
+      // canvas) starts a pan.
+      if (!isMiddle && !isSpace && isOnEditable) return;
+      e.preventDefault();
       drag = {
         startX: e.clientX, startY: e.clientY,
         panX0: panRef.current.x, panY0: panRef.current.y,
@@ -1389,6 +1434,8 @@ function App() {
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onUp);
     return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
       stage.removeEventListener("pointerdown", onDown);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
@@ -1560,7 +1607,6 @@ function App() {
       </div>
 
       <div className="stage" ref={stageRef}>
-       <div className="stage-content" ref={contentRef}>
         <div
           className="shipping-mark"
           style={{
@@ -1664,7 +1710,6 @@ function App() {
             <div className="sm-trim-guide" />
           )}
         </div>
-       </div>
       </div>
 
       {/* Welcome / sign-in overlay — locks the editor until a user is registered. */}
