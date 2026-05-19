@@ -62,6 +62,16 @@
   const RIGHT_QZ_MODULES = 7;
   const TOTAL_MODULES    = LEFT_QZ_MODULES + 95 + RIGHT_QZ_MODULES;
 
+  // Guard bar centres in bwip-js's no-text output (in module units,
+  // before our LEFT_QZ offset). These 6 bars are the "elongated"
+  // guards in the canonical EAN-13 look — they extend DOWN through
+  // the human-readable text strip, framing the digit groups.
+  //   Left guard (101 pattern):  bars at modules 0 and 2
+  //   Centre guard (01010):      bars at modules 46 and 48
+  //   Right guard (101):         bars at modules 92 and 94
+  // Each guard bar is 1 module wide, so its centre sits at module + 0.5.
+  const GUARD_BAR_CXS = new Set([0.5, 2.5, 46.5, 48.5, 92.5, 94.5]);
+
   // Text strip below the bars:
   //   GAP between bar bottom and text top — keeps the digits visually
   //   separate from the bars (avoids the "digits behind bars" look).
@@ -133,13 +143,22 @@
     // Render each bar as a <rect>. bwip-js bars are at cx=0..95 (module
     // units, no QZ); we shift them right by LEFT_QZ_MODULES so they sit
     // between the GS1-spec quiet zones in our SVG.
+    //
+    // Guard bars (the 6 cx positions in GUARD_BAR_CXS) extend DOWN past
+    // the data bars and through the text strip — the canonical EAN-13
+    // look where the human-readable digits are framed by elongated
+    // verticals at each guard position. Data bars stop at heightMm so
+    // they don't intrude on the text area.
+    const guardExtensionMm = includeText ? (TEXT_GAP_MM + TEXT_HEIGHT_MM) : 0;
     const barRects = bars
       .map((b) => {
+        const isGuard = GUARD_BAR_CXS.has(b.cx);
         const xMm = (b.cx + LEFT_QZ_MODULES - b.w / 2) * xDimMm;
         const wMm = b.w * xDimMm;
+        const hMm = heightMm + (isGuard ? guardExtensionMm : 0);
         return (
           `<rect x="${xMm.toFixed(3)}" y="0" ` +
-          `width="${wMm.toFixed(3)}" height="${heightMm.toFixed(3)}" ` +
+          `width="${wMm.toFixed(3)}" height="${hMm.toFixed(3)}" ` +
           `fill="#000"/>`
         );
       })
