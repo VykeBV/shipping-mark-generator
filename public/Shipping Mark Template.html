@@ -73,7 +73,10 @@
     left: 0;
     right: 0;
     height: 56px;
-    z-index: 40;
+    /* Above the Tweaks panel (which sets z-index: 2147483646 from
+       tweaks-panel.jsx) so the Export dropdown can open downwards
+       over the panel without getting clipped. */
+    z-index: 2147483647;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -1562,18 +1565,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=23"></script>
-<script type="text/babel" src="auth.jsx?v=23"></script>
-<script type="text/babel" src="presets.jsx?v=23"></script>
-<script type="text/babel" src="activity.jsx?v=23"></script>
+<script type="text/babel" src="config.jsx?v=24"></script>
+<script type="text/babel" src="auth.jsx?v=24"></script>
+<script type="text/babel" src="presets.jsx?v=24"></script>
+<script type="text/babel" src="activity.jsx?v=24"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=23"></script>
-<script type="text/babel" src="icons.jsx?v=23"></script>
-<script type="text/babel" src="barcode.jsx?v=23"></script>
-<script type="text/babel" src="welcome.jsx?v=23"></script>
-<script type="text/babel" src="account-chip.jsx?v=23"></script>
-<script type="text/babel" src="presets-panel.jsx?v=23"></script>
-<script type="text/babel" src="app.jsx?v=23"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=24"></script>
+<script type="text/babel" src="icons.jsx?v=24"></script>
+<script type="text/babel" src="barcode.jsx?v=24"></script>
+<script type="text/babel" src="welcome.jsx?v=24"></script>
+<script type="text/babel" src="account-chip.jsx?v=24"></script>
+<script type="text/babel" src="presets-panel.jsx?v=24"></script>
+<script type="text/babel" src="app.jsx?v=24"></script>
 
 <style>
   #__standalone-tweaks-btn {
