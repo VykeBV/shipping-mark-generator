@@ -32,7 +32,10 @@ const DEFAULTS = {
 
   ean13: "1234567890128",  // canonical placeholder EAN-13 (valid check digit)
   barcodeHeightMm: 20,
-  barcodeXDimMm: 0.264,    // GS1 minimum (smallest physical print). Range 0.264–0.660.
+  // GS1 100 % magnification (0.330 mm) — significantly more scannable on
+  // consumer printers than the 0.264 mm absolute minimum. Range still
+  // 0.264 mm – 0.660 mm via the Advanced panel.
+  barcodeXDimMm: 0.330,
 
   icons: {
     this_way_up: true,
@@ -1410,7 +1413,12 @@ function App() {
                    onChange={(v) => setTweak("ean13", v)} />
         <div className="twk-tip" style={{ marginTop: 4 }}>
           {normEan.ok
-            ? <>✓ <b>{normEan.digits}</b> — width {eanWidthMm.toFixed(1)} mm at xDim {t.barcodeXDimMm} mm</>
+            ? <>
+                ✓ <b>{normEan.digits}</b> — width {eanWidthMm.toFixed(1)} mm at xDim {t.barcodeXDimMm} mm<br/>
+                <span style={{ opacity: 0.7, fontSize: "10.5px" }}>
+                  Encoded by <b style={{ color: "#9DC9E8" }}>bwip-js</b> (BWIPP reference) — ISO/IEC 15420 compliant, vector PDF.
+                </span>
+              </>
             : <>✗ <b style={{ color: "#ff8080" }}>{normEan.error}</b></>}
         </div>
 
