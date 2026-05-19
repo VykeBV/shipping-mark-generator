@@ -1031,8 +1031,13 @@
     width: fit-content;
     max-width: 100%;
     z-index: 15;
-    background: rgba(255, 210, 100, 0.16);
-    border: 1px solid rgba(255, 210, 100, 0.52);
+    /* Opaque dark fill so the banner is readable regardless of what
+       sits underneath (was a translucent yellow tint that vanished
+       against the white artboard when the card was zoomed / panned
+       up under the banner). The yellow accent is now just the
+       border + text colour. */
+    background: rgba(28, 22, 8, 0.94);
+    border: 1px solid rgba(255, 210, 100, 0.55);
     border-radius: 999px;
     padding: 6px 14px;
     color: #FFE0A0;
@@ -1042,7 +1047,7 @@
     -webkit-backdrop-filter: blur(10px) saturate(140%);
     backdrop-filter: blur(10px) saturate(140%);
     text-align: center;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
     pointer-events: none;
     user-select: none;
     /* Truncate gracefully on narrow viewports rather than wrapping ugly */
@@ -1645,18 +1650,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=25"></script>
-<script type="text/babel" src="auth.jsx?v=25"></script>
-<script type="text/babel" src="presets.jsx?v=25"></script>
-<script type="text/babel" src="activity.jsx?v=25"></script>
+<script type="text/babel" src="config.jsx?v=26"></script>
+<script type="text/babel" src="auth.jsx?v=26"></script>
+<script type="text/babel" src="presets.jsx?v=26"></script>
+<script type="text/babel" src="activity.jsx?v=26"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=25"></script>
-<script type="text/babel" src="icons.jsx?v=25"></script>
-<script type="text/babel" src="barcode.jsx?v=25"></script>
-<script type="text/babel" src="welcome.jsx?v=25"></script>
-<script type="text/babel" src="account-chip.jsx?v=25"></script>
-<script type="text/babel" src="presets-panel.jsx?v=25"></script>
-<script type="text/babel" src="app.jsx?v=25"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=26"></script>
+<script type="text/babel" src="icons.jsx?v=26"></script>
+<script type="text/babel" src="barcode.jsx?v=26"></script>
+<script type="text/babel" src="welcome.jsx?v=26"></script>
+<script type="text/babel" src="account-chip.jsx?v=26"></script>
+<script type="text/babel" src="presets-panel.jsx?v=26"></script>
+<script type="text/babel" src="app.jsx?v=26"></script>
 
 <style>
   #__standalone-tweaks-btn {
