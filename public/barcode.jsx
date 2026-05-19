@@ -139,9 +139,22 @@
       .replace(/\sviewBox="[^"]*"/, ` viewBox="0 0 ${newVbW} ${vbH}"`)
       // bwip's SVG has no width/height attrs — insert them at physical mm
       // so screen + print render at exact physical size.
+      //
+      // preserveAspectRatio="none" is REQUIRED here: the viewBox aspect
+      // (113 modules × ~58 pts ≈ 1.95) doesn't match the physical
+      // container aspect (113×xDimMm by physHmm). With the default
+      // `xMidYMid meet` the browser uniform-scales the viewBox to fit
+      // one axis, leaving empty space on the other — and bwip-js's
+      // glyph paths (positioned at y≈50-58) then visually overlap the
+      // data bars (y=0-52.69) because both get squashed into the same
+      // physical height. Forcing non-uniform stretch keeps each axis at
+      // exactly the user's chosen X-dim and bar height; the OCR-B
+      // glyphs end up slightly taller than wide but still scan + read
+      // perfectly.
       .replace(
         /<svg\s/,
         `<svg width="${physWmm}mm" height="${physHmm}mm" ` +
+        `preserveAspectRatio="none" ` +
         `shape-rendering="crispEdges" ` +
         `data-ean="${norm.digits}" data-engine="bwip-js+svg2pdf" `,
       );

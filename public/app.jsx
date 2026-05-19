@@ -100,11 +100,15 @@ function availableIconsRegionMm(state) {
   const headerH = 12;                                       // approximate header height
   const headerGap = 2.5;                                    // .sm-trim flex-gap between header and body
   const bodyGap = 4;                                        // .sm-body flex gap between rows and icons
-  const barcodeBlockH = (state.barcodeHeightMm || 20) + 6;  // bars + human-readable + pad
   const barcodeBlockW = window.BARCODE
     ? window.BARCODE.widthMm({ xDimMm: state.barcodeXDimMm || 0.264 }) + 4
     : 36;
-  const usableH = (state.heightMm || 90) - trimPadV - headerH - headerGap - barcodeBlockH;
+  // Icons can use the FULL body height (we no longer subtract the
+  // barcode block height): `.sm-body` reserves a horizontal column for
+  // the barcode via `padding-right`, so icons (right-anchored) end at
+  // the barcode's left edge horizontally and never overlap. They're
+  // free to extend all the way down to the body bottom.
+  const usableH = (state.heightMm || 90) - trimPadV - headerH - headerGap;
   const bodyW = (state.widthMm || 130) - trimPadH - barcodeBlockW;
   // Content-aware rows column width:
   // - With row content → reserve max(40 mm, 40 % of body) so labels stay readable.

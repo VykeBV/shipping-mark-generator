@@ -649,12 +649,20 @@
      `transform: scale(X)` that JS applies to `.stage` for fit-to-frame
      rendering — otherwise the banner would shrink along with the card.
      Hidden when the welcome modal is up (handled by body.vyke-locked).
-     Sits BELOW the mobile topbar (z-index < 30) on small screens. */
+     Sits BELOW the mobile topbar (z-index < 30) on small screens.
+     The left/right anchors constrain the banner to the area LEFT of
+     the 320 px Tweaks panel; `margin: 0 auto` + `width: fit-content`
+     then centres the pill within that area so it never disappears
+     behind the panel. */
   .vyke-dev-banner {
     position: fixed;
     top: 14px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 14px;
+    right: 352px;                /* 320 panel + 16 right margin + 16 gap */
+    margin-left: auto;
+    margin-right: auto;
+    width: fit-content;
+    max-width: 100%;
     z-index: 15;
     background: rgba(255, 210, 100, 0.16);
     border: 1px solid rgba(255, 210, 100, 0.52);
@@ -666,11 +674,14 @@
     font-weight: 500;
     -webkit-backdrop-filter: blur(10px) saturate(140%);
     backdrop-filter: blur(10px) saturate(140%);
-    max-width: calc(100vw - 360px);   /* leave room for the 320px Tweaks panel + gutters */
     text-align: center;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
     pointer-events: none;
     user-select: none;
+    /* Truncate gracefully on narrow viewports rather than wrapping ugly */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .vyke-dev-banner b { color: #fff; font-weight: 700; margin-right: 4px; }
   /* Hide the dev banner while the welcome modal blurs everything else;
@@ -679,9 +690,9 @@
   @media (max-width: 768px) {
     .vyke-dev-banner {
       top: 56px;                /* clear of the 48 px mobile topbar */
+      right: 14px;               /* no panel on mobile, use full width */
       font-size: 9.5px;
       padding: 5px 11px;
-      max-width: calc(100vw - 24px);
     }
   }
 
@@ -962,8 +973,11 @@
      into. `margin-left: auto` on .sm-icons keeps them anchored at the
      right edge regardless of how much space the rows column takes.
      The barcode is positioned absolutely (bottom-right of the trim
-     area); `padding-right` / `padding-bottom` reserve its space so
-     body content can't slide underneath it. */
+     area); `padding-right` reserves a column for it so body content
+     can't slide horizontally underneath it. NO padding-bottom — the
+     barcode only occupies the bottom-right corner, and padding-right
+     already keeps content out of that column entirely, so icons can
+     safely extend down to the body bottom on short cards. */
   .sm-body {
     flex: 1;
     display: flex;
@@ -971,7 +985,6 @@
     gap: 4mm;
     min-height: 0;
     padding-right: calc(var(--barcode-w-mm, 36) * 1mm);
-    padding-bottom: calc(var(--barcode-block-h-mm, 26) * 1mm);
   }
 
   /* Text rows column — sized to content via flex.
