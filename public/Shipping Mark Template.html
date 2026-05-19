@@ -188,6 +188,86 @@
     margin-top: 2px;
   }
 
+  /* Secondary header button (used for the Presets trigger). Same
+     shape as the Export trigger but a more neutral fill so the
+     primary action (Export) still reads as the most important
+     thing in the header. */
+  .vyke-header-btn {
+    appearance: none;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.88);
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 8px;
+    font: 500 12px/1 inherit;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background .12s, border-color .12s;
+  }
+  .vyke-header-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.20);
+    color: #fff;
+  }
+  .vyke-header-btn svg { width: 14px; height: 14px; }
+  .vyke-header-btn .vyke-export-chev { width: 9px; height: 9px; opacity: 0.6; }
+
+  /* Presets popover — wraps the existing PresetsPanel component
+     (save row + scrollable preset list with thumbnails). Wider and
+     taller than the Export menu to give the list breathing room. */
+  .vyke-presets-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 360px;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: rgba(18, 19, 23, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+    z-index: 41;
+    /* Subtle scroll thumb matching the rest of the dark chrome */
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+    scrollbar-width: thin;
+  }
+  .vyke-presets-menu[hidden] { display: none; }
+  .vyke-presets-menu::-webkit-scrollbar { width: 8px; }
+  .vyke-presets-menu::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 4px;
+  }
+  /* Force the preset-row buttons / fields into dark-mode contrast — the
+     existing .vyke-pre-* CSS is light-mode by default (designed for the
+     Tweaks panel which had its own dark-text overrides). */
+  .vyke-presets-menu .twk-field,
+  .vyke-presets-menu input.twk-field {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    color: rgba(255, 255, 255, 0.92) !important;
+  }
+  .vyke-presets-menu .twk-btn {
+    background: rgba(157, 201, 232, 0.18) !important;
+    color: #e7f1f8 !important;
+  }
+  .vyke-presets-menu .twk-btn:hover { background: rgba(157, 201, 232, 0.30) !important; }
+  .vyke-presets-menu .twk-tip {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 11px;
+  }
+  .vyke-presets-menu .vyke-pre-name { color: rgba(255, 255, 255, 0.92); }
+  .vyke-presets-menu .vyke-pre-time { color: rgba(255, 255, 255, 0.5); }
+  .vyke-presets-menu .vyke-pre-empty { color: rgba(255, 255, 255, 0.55); }
+
   /* Account chip inside the header: same dark glass tile but compact
      and right-aligned (the existing .vyke-acc-* rules from
      account-chip.jsx still drive the popover under it). */
@@ -1565,18 +1645,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=24"></script>
-<script type="text/babel" src="auth.jsx?v=24"></script>
-<script type="text/babel" src="presets.jsx?v=24"></script>
-<script type="text/babel" src="activity.jsx?v=24"></script>
+<script type="text/babel" src="config.jsx?v=25"></script>
+<script type="text/babel" src="auth.jsx?v=25"></script>
+<script type="text/babel" src="presets.jsx?v=25"></script>
+<script type="text/babel" src="activity.jsx?v=25"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=24"></script>
-<script type="text/babel" src="icons.jsx?v=24"></script>
-<script type="text/babel" src="barcode.jsx?v=24"></script>
-<script type="text/babel" src="welcome.jsx?v=24"></script>
-<script type="text/babel" src="account-chip.jsx?v=24"></script>
-<script type="text/babel" src="presets-panel.jsx?v=24"></script>
-<script type="text/babel" src="app.jsx?v=24"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=25"></script>
+<script type="text/babel" src="icons.jsx?v=25"></script>
+<script type="text/babel" src="barcode.jsx?v=25"></script>
+<script type="text/babel" src="welcome.jsx?v=25"></script>
+<script type="text/babel" src="account-chip.jsx?v=25"></script>
+<script type="text/babel" src="presets-panel.jsx?v=25"></script>
+<script type="text/babel" src="app.jsx?v=25"></script>
 
 <style>
   #__standalone-tweaks-btn {

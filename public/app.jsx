@@ -376,32 +376,42 @@ async function logoToBlackPng(src, threshold = 200) {
 
 // ─── Main App ────────────────────────────────────────────────────────────────
 // ─── HeaderBar ────────────────────────────────────────────────────────────────
-// Top application bar. Holds the Vyke Create logo on the left, an
-// "↓ Export" dropdown and the account chip on the right. Replaces
-// what used to live inside the Tweaks panel header / body so the
-// panel can focus purely on document editing.
+// Top application bar. Holds the Vyke Create logo on the left, then
+// (right side, in order) the Presets menu, the Export menu, the
+// account chip. Replaces what used to live inside the Tweaks panel
+// header / body so the panel can focus purely on document editing.
 function HeaderBar({
   user, onSignOut,
   widthMm, heightMm, bleedMm, batchProgress,
+  currentState, onApplyState,
   onDownloadPdf, onExportCsv, onImportCsv, onBatchPdf, onResetState,
 }) {
   const { useState, useEffect, useRef } = React;
-  const [open, setOpen] = useState(false);
-  const wrapRef = useRef(null);
-  // Close the menu on outside click or Escape.
+  const [exportOpen, setExportOpen] = useState(false);
+  const [presetsOpen, setPresetsOpen] = useState(false);
+  const exportRef = useRef(null);
+  const presetsRef = useRef(null);
+  // Close any open dropdown on outside-click or Escape.
   useEffect(() => {
-    if (!open) return;
+    if (!exportOpen && !presetsOpen) return;
     const onDocClick = (e) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+      if (exportOpen && exportRef.current && !exportRef.current.contains(e.target)) {
+        setExportOpen(false);
+      }
+      if (presetsOpen && presetsRef.current && !presetsRef.current.contains(e.target)) {
+        setPresetsOpen(false);
+      }
     };
-    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    const onKey = (e) => {
+      if (e.key === "Escape") { setExportOpen(false); setPresetsOpen(false); }
+    };
     document.addEventListener("mousedown", onDocClick);
     document.addEventListener("keydown", onKey);
     return () => {
       document.removeEventListener("mousedown", onDocClick);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [exportOpen, presetsOpen]);
 
   const sizeSuffix = bleedMm
     ? `${widthMm} × ${heightMm} mm + ${bleedMm} mm bleed`
@@ -413,19 +423,54 @@ function HeaderBar({
     ? `Batch… ${batchProgress.i}/${batchProgress.n}`
     : "Batch CSV → multi-page PDF";
 
-  const runAndClose = (fn) => () => { setOpen(false); fn && fn(); };
+  const runAndCloseExport = (fn) => () => { setExportOpen(false); fn && fn(); };
 
   return (
     <header className="vyke-header" role="banner">
       <div className="vyke-header-logo" aria-label="Vyke Create" />
       <div className="vyke-header-spacer" />
 
-      <div className="vyke-export-wrap" ref={wrapRef}>
+      {/* Presets menu — same dropdown pattern as Export. Wraps the
+          existing window.PresetsPanel component so all save / load /
+          delete logic stays in one place. Only shown when signed in. */}
+      {user && window.PresetsPanel && (
+        <div className="vyke-export-wrap" ref={presetsRef}>
+          <button
+            type="button"
+            className="vyke-header-btn"
+            onClick={() => { setPresetsOpen((v) => !v); setExportOpen(false); }}
+            aria-expanded={presetsOpen ? "true" : "false"}
+            aria-haspopup="menu"
+            title="Save the current setup as a preset, or load one you saved earlier"
+          >
+            <svg viewBox="0 0 14 14" aria-hidden="true">
+              <path
+                fill="none" stroke="currentColor" strokeWidth="1.4"
+                strokeLinecap="round" strokeLinejoin="round"
+                d="M1.5 4.5h11v7a1 1 0 0 1-1 1H2.5a1 1 0 0 1-1-1v-7z M1.5 4.5l1-2.5h4l1 2 4 .5z"
+              />
+            </svg>
+            Presets
+            <svg className="vyke-export-chev" viewBox="0 0 10 6" aria-hidden="true">
+              <path fill="currentColor" d="M0 0h10L5 6z" />
+            </svg>
+          </button>
+          <div className="vyke-presets-menu" role="menu" hidden={!presetsOpen}>
+            <window.PresetsPanel
+              user={user}
+              currentState={currentState}
+              onApplyState={(state) => { onApplyState(state); setPresetsOpen(false); }}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="vyke-export-wrap" ref={exportRef}>
         <button
           type="button"
           className="vyke-export-trigger"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open ? "true" : "false"}
+          onClick={() => { setExportOpen((v) => !v); setPresetsOpen(false); }}
+          aria-expanded={exportOpen ? "true" : "false"}
           aria-haspopup="menu"
         >
           <svg viewBox="0 0 14 14" aria-hidden="true">
@@ -440,29 +485,29 @@ function HeaderBar({
             <path fill="currentColor" d="M0 0h10L5 6z" />
           </svg>
         </button>
-        <div className="vyke-export-menu" role="menu" hidden={!open}>
+        <div className="vyke-export-menu" role="menu" hidden={!exportOpen}>
           <button type="button" role="menuitem" className="is-primary"
-                  onClick={runAndClose(onDownloadPdf)}>
+                  onClick={runAndCloseExport(onDownloadPdf)}>
             <span>
               {pdfLabel}
               <small>{sizeSuffix}</small>
             </span>
           </button>
           <div className="vyke-export-divider" />
-          <button type="button" role="menuitem" onClick={runAndClose(onExportCsv)}>
+          <button type="button" role="menuitem" onClick={runAndCloseExport(onExportCsv)}>
             Export CSV
             <small>Save this mark as one row</small>
           </button>
-          <button type="button" role="menuitem" onClick={runAndClose(onImportCsv)}>
+          <button type="button" role="menuitem" onClick={runAndCloseExport(onImportCsv)}>
             Import CSV
             <small>Load a single row from CSV</small>
           </button>
-          <button type="button" role="menuitem" onClick={runAndClose(onBatchPdf)}>
+          <button type="button" role="menuitem" onClick={runAndCloseExport(onBatchPdf)}>
             {batchLabel}
             <small>One page per CSV row</small>
           </button>
           <div className="vyke-export-divider" />
-          <button type="button" role="menuitem" onClick={runAndClose(onResetState)}>
+          <button type="button" role="menuitem" onClick={runAndCloseExport(onResetState)}>
             Reset to defaults
           </button>
         </div>
@@ -1862,6 +1907,8 @@ function App() {
         heightMm={t.heightMm}
         bleedMm={t.bleedMm}
         batchProgress={batchProgress}
+        currentState={t}
+        onApplyState={applyPresetState}
         onDownloadPdf={downloadPdf}
         onExportCsv={exportCsv}
         onImportCsv={() => csvInputRef.current?.click()}
@@ -1967,14 +2014,8 @@ function App() {
           />
         )}
 
-        <TweakSection label="My presets" />
-        {user && (
-          <PresetsPanel
-            user={user}
-            currentState={t}
-            onApplyState={applyPresetState}
-          />
-        )}
+        {/* "My presets" moved to the global header bar's Presets menu
+            (HeaderBar component above), so save/load lives in one place. */}
 
         <TweakSection label="Barcode (EAN-13)" />
         <TweakText label="Digits (12 or 13)" value={t.ean13}
