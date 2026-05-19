@@ -72,12 +72,23 @@
   // Each guard bar is 1 module wide, so its centre sits at module + 0.5.
   const GUARD_BAR_CXS = new Set([0.5, 2.5, 46.5, 48.5, 92.5, 94.5]);
 
-  // Text strip below the bars:
-  //   GAP between bar bottom and text top — keeps the digits visually
-  //   separate from the bars (avoids the "digits behind bars" look).
-  //   HEIGHT is the cap-height-ish room reserved for OCR-B-like digits.
-  const TEXT_GAP_MM    = 0.8;
-  const TEXT_HEIGHT_MM = 3.0;
+  // Text strip below the bars (industry-standard EAN-13 proportions):
+  //   - GAP: small (0.3 mm) — text sits right under the data bars, in
+  //     the canonical "guard extension" area. Big enough to read as a
+  //     clear separation, small enough to look retail-canonical.
+  //   - HEIGHT: 2.75 mm cap height — the GS1 General Specifications
+  //     recommended HRI (Human Readable Interpretation) size for
+  //     EAN-13 at 100 % magnification. Stays readable at any X-dim.
+  const TEXT_GAP_MM    = 0.3;
+  const TEXT_HEIGHT_MM = 2.75;
+
+  // OCR-B is the ISO-defined font for EAN-13 HRI; few browsers ship
+  // it, so we declare it first and fall back through Courier (jsPDF
+  // built-in monospace, used by svg2pdf for the PDF render) to generic
+  // monospace. Result: PDF gets Courier; browser previews get the
+  // best installed monospace, which always looks more "barcode-y"
+  // than a proportional sans like Helvetica.
+  const HRI_FONT_FAMILY = "'OCR-B', 'OCR B Std', 'Courier New', Courier, monospace";
 
   // Total physical width including both quiet zones.
   function widthMm({ xDimMm }) {
@@ -164,23 +175,29 @@
       })
       .join("");
 
-    // Human-readable digits below the bars, positioned per the EAN-13
-    // standard:
+    // Human-readable digits below the bars, positioned per the
+    // ISO/IEC 15420 / GS1 EAN-13 layout:
     //   - First (system) digit: right-aligned inside the left quiet
     //     zone, 2 modules before the first bar.
-    //   - Digits 2-7: centred under the left bar group (modules 14-55,
-    //     so centre at module 34.5).
+    //   - Digits 2-7: centred under the left bar group (modules 14-55
+    //     in our SVG, centre at module 34.5).
     //   - Digits 8-13: centred under the right bar group (modules
-    //     61-102, so centre at module 81.5).
+    //     61-102, centre at module 81.5).
+    // Font: OCR-B (with monospace fallback chain — see HRI_FONT_FAMILY
+    // above for why). Font-size is the cap height; baseline sits a
+    // little above the bottom of the text strip.
     let textEls = "";
     if (includeText) {
-      const baselineMm = heightMm + TEXT_GAP_MM + TEXT_HEIGHT_MM * 0.82;
-      const fontSizeMm = TEXT_HEIGHT_MM * 0.95;
-      const letterSpacingMm = xDimMm * 0.3;
+      const baselineMm = heightMm + TEXT_GAP_MM + TEXT_HEIGHT_MM * 0.85;
+      const fontSizeMm = TEXT_HEIGHT_MM;
+      // Tiny extra tracking between digits keeps each character
+      // visually aligned with its bar group — same convention as
+      // bwip-js's textgaps option.
+      const letterSpacingMm = xDimMm * 0.25;
       const fontAttrs =
-        `font-family="Helvetica,Arial,sans-serif" ` +
+        `font-family="${HRI_FONT_FAMILY}" ` +
         `font-size="${fontSizeMm.toFixed(3)}" ` +
-        `font-weight="500" fill="#000"`;
+        `font-weight="400" fill="#000"`;
 
       const firstX  = (LEFT_QZ_MODULES - 2) * xDimMm;
       const leftCx  = 34.5 * xDimMm;
