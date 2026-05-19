@@ -458,46 +458,68 @@
   .twk-panel .twk-sect:first-child { border-top: 0; margin-top: 0; padding-top: 8px !important; }
 
   /* ─── Collapsible section (accordion) ─────────────────────────────
-     Each TweakSection in the panel becomes a fold-open block: header
-     with the section label + chevron, click toggles the body. Open
-     state per section is remembered in sessionStorage so the panel
-     keeps the user's choice while they're editing. */
+     Each TweakSection in the panel becomes a fold-open MENU ROW.
+     Closed by default — headers stack like a tidy menu the user can
+     fold open one at a time. Open state per section is remembered
+     in sessionStorage so it persists across edits. */
   .twk-panel .twk-coll {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    /* Full-width row — negate .twk-body's 16 px horizontal padding so
+       the header hover state and divider line stretch edge-to-edge. */
+    margin: 0 -16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
-  .twk-panel .twk-coll:last-child { border-bottom: 0; }
+  .twk-panel .twk-coll:first-child { border-top: 1px solid rgba(255, 255, 255, 0.06); }
   .twk-panel .twk-coll-hd {
     appearance: none;
     border: 0;
     background: transparent;
-    color: #9DC9E8;
+    color: rgba(255, 255, 255, 0.92);
     width: 100%;
-    padding: 14px 0 12px;
+    padding: 14px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     cursor: pointer;
-    font: 700 9.5px/1 "Inter", "Roboto", system-ui, -apple-system, sans-serif;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    transition: color .12s;
+    /* Larger, normal-case text reads as a menu row (the previous
+       eyebrow-style ALL-CAPS at 9.5 px looked like a label header
+       rather than a clickable control). */
+    font: 600 12.5px/1.2 "Inter", "Roboto", system-ui, -apple-system, sans-serif;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    transition: background .12s, color .12s;
   }
-  .twk-panel .twk-coll-hd:hover { color: #BCE0F2; }
+  .twk-panel .twk-coll-hd:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: #fff;
+  }
+  /* When a section is open, accent the header so it's clearly the
+     active group. */
+  .twk-panel .twk-coll.is-open > .twk-coll-hd {
+    color: #9DC9E8;
+    background: rgba(157, 201, 232, 0.06);
+  }
   .twk-panel .twk-coll-label { flex: 1; text-align: left; }
   .twk-panel .twk-coll-chev {
-    color: rgba(255, 255, 255, 0.40);
-    font-size: 10px;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 11px;
+    line-height: 1;
     transform: rotate(-90deg);
-    transition: transform .15s ease, color .12s;
-    margin-left: 8px;
+    transition: transform .18s cubic-bezier(.3,.7,.4,1), color .12s;
+    margin-left: 10px;
   }
-  .twk-panel .twk-coll.is-open .twk-coll-chev { transform: rotate(0deg); }
-  .twk-panel .twk-coll-hd:hover .twk-coll-chev { color: rgba(255, 255, 255, 0.65); }
+  .twk-panel .twk-coll.is-open .twk-coll-chev {
+    transform: rotate(0deg);
+    color: #9DC9E8;
+  }
+  .twk-panel .twk-coll-hd:hover .twk-coll-chev { color: rgba(255, 255, 255, 0.85); }
   .twk-panel .twk-coll-body {
-    padding: 2px 0 14px;
+    padding: 6px 16px 16px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    /* Subtle inset so the opened body reads as 'belongs to' the
+       header above it. */
+    background: rgba(255, 255, 255, 0.015);
   }
 
   .twk-panel .twk-lbl,
@@ -1727,18 +1749,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=29"></script>
-<script type="text/babel" src="auth.jsx?v=29"></script>
-<script type="text/babel" src="presets.jsx?v=29"></script>
-<script type="text/babel" src="activity.jsx?v=29"></script>
+<script type="text/babel" src="config.jsx?v=30"></script>
+<script type="text/babel" src="auth.jsx?v=30"></script>
+<script type="text/babel" src="presets.jsx?v=30"></script>
+<script type="text/babel" src="activity.jsx?v=30"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=29"></script>
-<script type="text/babel" src="icons.jsx?v=29"></script>
-<script type="text/babel" src="barcode.jsx?v=29"></script>
-<script type="text/babel" src="welcome.jsx?v=29"></script>
-<script type="text/babel" src="account-chip.jsx?v=29"></script>
-<script type="text/babel" src="presets-panel.jsx?v=29"></script>
-<script type="text/babel" src="app.jsx?v=29"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=30"></script>
+<script type="text/babel" src="icons.jsx?v=30"></script>
+<script type="text/babel" src="barcode.jsx?v=30"></script>
+<script type="text/babel" src="welcome.jsx?v=30"></script>
+<script type="text/babel" src="account-chip.jsx?v=30"></script>
+<script type="text/babel" src="presets-panel.jsx?v=30"></script>
+<script type="text/babel" src="app.jsx?v=30"></script>
 
 <style>
   #__standalone-tweaks-btn {

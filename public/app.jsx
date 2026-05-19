@@ -2030,6 +2030,11 @@ function App() {
               </>
             : <>✗ <b style={{ color: "#ff8080" }}>{normEan.error}</b></>}
         </div>
+        <div className="twk-tip" style={{ marginTop: 4 }}>
+          The <b>EAN-13 barcode</b> is computed from your digits and validated
+          live — enter 12 digits to auto-add the check digit, or 13 to validate.
+          Bars are drawn as <b>true CMYK vector</b> in the PDF — never rasterised.
+        </div>
 
         <TweakSection label="Handling icons" />
         <div className="twk-tip" style={{ marginTop: 2 }}>
@@ -2152,14 +2157,11 @@ function App() {
           }}
         />
 
-        <TweakSection label="Tip" />
-        <div className="twk-tip">
-          The <b>EAN-13 barcode</b> is computed from your digits and validated live —
-          enter 12 digits to auto-add the check digit, or 13 to validate.<br/>
-          Bars are drawn as <b>true CMYK vector</b> in the PDF — never rasterised.<br/>
-          <b>Export CSV</b> saves this mark as one row;
-          upload a multi-row CSV via <b>Batch</b> to generate one page per row.
-        </div>
+        {/* The 'Tip' section that used to sit here has been broken
+            up — its barcode-related text moved into the Barcode
+            section above (so users see it WHILE editing the EAN),
+            and the CSV / batch reminder is no longer needed since
+            those actions live in the header's Export menu. */}
 
         <div className="twk-footer">powered by Xafai</div>
       </TweaksPanel>

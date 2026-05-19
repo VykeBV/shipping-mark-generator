@@ -341,7 +341,7 @@ function TweakSection({ label, children }) {
 // and chevron. Defaults open; remembers per-label state in
 // sessionStorage so the user's collapse choices persist while
 // they're navigating the editor.
-function CollapsibleSection({ label, defaultOpen = true, storageKey, children }) {
+function CollapsibleSection({ label, defaultOpen = false, storageKey, children }) {
   const k = storageKey || ('twk-coll-' + (label || '').toLowerCase().replace(/\s+/g, '-'));
   const [open, setOpen] = React.useState(() => {
     try {
