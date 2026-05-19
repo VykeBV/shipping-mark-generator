@@ -72,15 +72,24 @@
   // Each guard bar is 1 module wide, so its centre sits at module + 0.5.
   const GUARD_BAR_CXS = new Set([0.5, 2.5, 46.5, 48.5, 92.5, 94.5]);
 
-  // Text strip below the bars (industry-standard EAN-13 proportions):
-  //   - GAP: small (0.3 mm) — text sits right under the data bars, in
-  //     the canonical "guard extension" area. Big enough to read as a
-  //     clear separation, small enough to look retail-canonical.
-  //   - HEIGHT: 2.75 mm cap height — the GS1 General Specifications
-  //     recommended HRI (Human Readable Interpretation) size for
-  //     EAN-13 at 100 % magnification. Stays readable at any X-dim.
-  const TEXT_GAP_MM    = 0.3;
-  const TEXT_HEIGHT_MM = 2.75;
+  // Layout proportions matching the Wikipedia canonical EAN-13 SVG
+  // (https://commons.wikimedia.org/wiki/File:EAN-13-5901234123457.svg),
+  // which itself follows ISO/IEC 15420 §A. All measured in MODULES so
+  // everything scales correctly with the user's chosen X-dim:
+  //
+  //   - Guard extension below data bars: 5 modules (the spec value).
+  //   - Text top:  right under data bars, with a 1-module gap above.
+  //   - Text cap height: 8 modules.
+  //   - Text bottom therefore extends BELOW the guard bars by
+  //     (1 + 8) − 5 = 4 modules — the "digits hang below guards"
+  //     effect you see in real retail barcodes.
+  //
+  // The text is NOT confined within the guard extension. Guards cover
+  // only the UPPER portion of the digits; the lower halves sit in
+  // white space. This is the canonical look the user asked for.
+  const GUARD_EXTENSION_MODULES = 5;
+  const TEXT_GAP_MODULES        = 1;
+  const TEXT_HEIGHT_MODULES     = 8;
 
   // OCR-B is the ISO-defined font for EAN-13 HRI; few browsers ship
   // it, so we declare it first and fall back through Courier (jsPDF
@@ -145,28 +154,39 @@
   // Every dimension is in millimetres. viewBox matches the physical
   // width/height 1:1 so there's no aspect-ratio juggling. svg2pdf
   // walks plain <rect> and <text> elements with explicit mm positions.
+  //
+  // Vertical layout (all measured down from y=0 at the bar tops):
+  //   y = 0              top of all bars
+  //   y = heightMm       bottom of data bars
+  //   y = heightMm + 5X  bottom of guard bars (5 modules extension)
+  //   y = heightMm + 1X  text top (= 1 module below data bars)
+  //   y = heightMm + 9X  text bottom (text is 8 modules tall)
+  //                       → 4 modules of text hang BELOW guards
+  //   y = physHmm        SVG bottom = max(guard bottom, text bottom)
   function buildSvg(digits, heightMm, xDimMm, includeText) {
     const bars = getBars(digits, heightMm);
 
     const physWmm = TOTAL_MODULES * xDimMm;
-    const physHmm = heightMm + (includeText ? (TEXT_GAP_MM + TEXT_HEIGHT_MM) : 0);
+    const guardExtMm = includeText ? GUARD_EXTENSION_MODULES * xDimMm : 0;
+    const textGapMm = includeText ? TEXT_GAP_MODULES * xDimMm : 0;
+    const textHeightMm = includeText ? TEXT_HEIGHT_MODULES * xDimMm : 0;
+    const guardBottomMm = heightMm + guardExtMm;
+    const textBottomMm  = heightMm + textGapMm + textHeightMm;
+    const physHmm = Math.max(guardBottomMm, textBottomMm);
 
     // Render each bar as a <rect>. bwip-js bars are at cx=0..95 (module
     // units, no QZ); we shift them right by LEFT_QZ_MODULES so they sit
     // between the GS1-spec quiet zones in our SVG.
     //
-    // Guard bars (the 6 cx positions in GUARD_BAR_CXS) extend DOWN past
-    // the data bars and through the text strip — the canonical EAN-13
-    // look where the human-readable digits are framed by elongated
-    // verticals at each guard position. Data bars stop at heightMm so
-    // they don't intrude on the text area.
-    const guardExtensionMm = includeText ? (TEXT_GAP_MM + TEXT_HEIGHT_MM) : 0;
+    // Guard bars (the 6 cx positions in GUARD_BAR_CXS) extend exactly
+    // 5 modules past the data bars — the standard EAN-13 guard length.
+    // Data bars stop at heightMm.
     const barRects = bars
       .map((b) => {
         const isGuard = GUARD_BAR_CXS.has(b.cx);
         const xMm = (b.cx + LEFT_QZ_MODULES - b.w / 2) * xDimMm;
         const wMm = b.w * xDimMm;
-        const hMm = heightMm + (isGuard ? guardExtensionMm : 0);
+        const hMm = isGuard ? guardBottomMm : heightMm;
         return (
           `<rect x="${xMm.toFixed(3)}" y="0" ` +
           `width="${wMm.toFixed(3)}" height="${hMm.toFixed(3)}" ` +
@@ -183,16 +203,16 @@
     //     in our SVG, centre at module 34.5).
     //   - Digits 8-13: centred under the right bar group (modules
     //     61-102, centre at module 81.5).
-    // Font: OCR-B (with monospace fallback chain — see HRI_FONT_FAMILY
-    // above for why). Font-size is the cap height; baseline sits a
-    // little above the bottom of the text strip.
+    // Font: OCR-B (with monospace fallback chain — see HRI_FONT_FAMILY).
+    // Cap height = 8 × X-dim; baseline sits a little above the bottom
+    // of the text strip so the digits sit visually centred under the
+    // guard extensions.
     let textEls = "";
     if (includeText) {
-      const baselineMm = heightMm + TEXT_GAP_MM + TEXT_HEIGHT_MM * 0.85;
-      const fontSizeMm = TEXT_HEIGHT_MM;
+      const baselineMm = heightMm + textGapMm + textHeightMm * 0.85;
+      const fontSizeMm = textHeightMm;
       // Tiny extra tracking between digits keeps each character
-      // visually aligned with its bar group — same convention as
-      // bwip-js's textgaps option.
+      // visually aligned with its bar group.
       const letterSpacingMm = xDimMm * 0.25;
       const fontAttrs =
         `font-family="${HRI_FONT_FAMILY}" ` +
@@ -251,10 +271,14 @@
       .parseFromString(svgString, "image/svg+xml")
       .documentElement;
 
-    // Physical dimensions in pure mm — pulled straight off the SVG so
-    // preview and PDF use exactly the same values.
+    // Physical dimensions in pure mm — derived with the same formula
+    // as buildSvg so preview and PDF use exactly the same container.
+    // physHmm is max(guard bottom, text bottom); the text typically
+    // hangs a few modules below the guard bars in the canonical look.
     const physWmm = TOTAL_MODULES * xDimMm;
-    const physHmm = heightMm + (includeText ? (TEXT_GAP_MM + TEXT_HEIGHT_MM) : 0);
+    const guardBottomMm = heightMm + (includeText ? GUARD_EXTENSION_MODULES * xDimMm : 0);
+    const textBottomMm  = heightMm + (includeText ? (TEXT_GAP_MODULES + TEXT_HEIGHT_MODULES) * xDimMm : 0);
+    const physHmm = Math.max(guardBottomMm, textBottomMm);
 
     await pdf.svg(svgEl, { x, y, width: physWmm, height: physHmm });
   }
