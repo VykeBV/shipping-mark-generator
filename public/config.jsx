@@ -22,8 +22,10 @@
 // browser can keep working offline-style if Supabase ever goes away).
 
 window.SUPABASE_CONFIG = {
-  url: "",          // e.g. "https://abcdefghij.supabase.co"
-  anonKey: "",      // e.g. "eyJhbGciOi..."
+  url: "https://tznyoaodvdgulgrzfqaw.supabase.co",
+  // Publishable (anon) key — safe to commit; RLS-bound permissions only.
+  // Do NOT replace with the `sb_secret_*` service-role key.
+  anonKey: "sb_publishable_b6HspyFHI4-H1XpchtjX-A_qhyUmwFD",
 
   // Emails listed here see admin-only affordances (currently none, but
   // reserved for a future "Open admin" link to the Supabase dashboard).
