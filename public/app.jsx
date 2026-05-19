@@ -1279,6 +1279,28 @@ function App() {
       <div className="vyke-dev-banner" role="status" aria-live="polite">
         🚧 <b>In development</b> — we're shipping changes while you use the tool. Some features may behave oddly.
       </div>
+
+      {/* Canvas-level icon overflow warning — shows when the user's
+          chosen icon size won't fit the current card. Lives next to
+          the canvas (not in the Tweaks panel) so the feedback is
+          adjacent to the actual problem. Includes a one-click "Fit"
+          button that snaps the slider to the largest size that fits. */}
+      {iconsDontFit && (
+        <div className="vyke-canvas-warning" role="alert" aria-live="polite">
+          <span>
+            <b>Icons don't fit at {t.iconSizeMm || 14}&nbsp;mm.</b>
+            {" "}They'll be clipped in the preview and PDF.
+          </span>
+          {suggestedIconMm > 0 && (
+            <button
+              type="button"
+              onClick={() => setTweak("iconSizeMm", suggestedIconMm)}
+            >
+              Fit to {suggestedIconMm}&nbsp;mm
+            </button>
+          )}
+        </div>
+      )}
       <div className="stage" ref={stageRef}>
         <div
           className="shipping-mark"
@@ -1461,22 +1483,12 @@ function App() {
           min={6} max={50} step={0.5} unit="mm"
           onChange={(v) => setTweak("iconSizeMm", v)}
         />
-        {iconsDontFit && (
-          <div className="twk-warning">
-            <b>Icons don't fit at {t.iconSizeMm || 14}&nbsp;mm.</b>
-            {" "}They'll be clipped in the preview and PDF.{" "}
-            {suggestedIconMm > 0 && (
-              <button
-                type="button"
-                className="twk-warning-action"
-                onClick={() => setTweak("iconSizeMm", suggestedIconMm)}
-              >
-                Fit to {suggestedIconMm}&nbsp;mm
-              </button>
-            )}
-          </div>
-        )}
-        {!iconsDontFit && (t.iconSizeMm || 14) < 19 && (
+        {/* Icon overflow warning is rendered OUTSIDE the Tweaks panel
+            as a floating banner at the bottom of the canvas (see
+            the <div className="vyke-canvas-warning"> below). Putting
+            it on the canvas keeps the visual feedback close to where
+            the actual clipping happens, instead of buried in the panel. */}
+        {(t.iconSizeMm || 14) < 19 && !iconsDontFit && (
           <div className="twk-tip" style={{ borderColor: "rgba(255,180,80,.35)", background: "rgba(255,180,80,.06)" }}>
             ⚠︎ Below the ~19&nbsp;mm industry rule-of-thumb minimum — verify
             visibility on the package.

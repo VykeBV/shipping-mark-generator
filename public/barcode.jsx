@@ -66,12 +66,13 @@
   // bwip-js's `includetext: true` output appears to include only the
   // 11 left + ~1 right modules; we extend right by this much:
   const BWIP_EXTRA_RIGHT_QZ = 6;
-  // bwip-js reserves a fixed 5.31-unit strip below the data bars for the
-  // human-readable digits + guard-bar extensions when `includetext: true`.
-  // Verified empirically across bar heights 10–40 mm: the strip height is
-  // a constant, independent of `height`. (It's the OCR-B cap height + the
-  // textyoffset, in BWIPP's pt-based coord system.)
-  const TEXT_STRIP_UNITS = 5.31;
+  // Data bar truncation: bwip-js positions the OCR-B glyph paths so they
+  // overlap the bottom ~3 units of the data bars, causing data bars to
+  // visually "show through" the white interiors of digits (esp. "0",
+  // "8"). toSvg() detects this and re-writes the bar end Y to clear the
+  // glyph area entirely; the resulting physical height is then scaled
+  // so the (truncated) data bars are still heightMm tall as the user
+  // requested. See findDataBarEndY / findGlyphTopY below.
 
   function widthMm({ xDimMm }) {
     return TOTAL_MODULES * xDimMm;
@@ -103,17 +104,61 @@
     });
   }
 
+  // ── Helpers: detect bar/glyph Y boundaries in a bwip-js SVG ────────
+  // bwip-js positions the OCR-B digit glyph paths so they OVERLAP the
+  // bottom ~3 units of the data bars (e.g., for h=20: data bars end at
+  // y=53, glyphs start at y=50). The data bars then show through the
+  // white interiors of digits like "0" or "8" — it reads as the bars
+  // being "behind" the digits.
+  //
+  // We fix this by truncating the data bars in the SVG so they end
+  // exactly where the glyphs start. Guard bars (the deeper ones at
+  // y=0..vbH) stay full-height and frame the digits canonically.
+  function findDataBarEndY(rawSvg, vbH) {
+    const barPathRe = /<path[^>]*?stroke="#000000"[^>]*?d="([^"]+)"/g;
+    const ys = new Set();
+    let pm;
+    while ((pm = barPathRe.exec(rawSvg)) !== null) {
+      const segRe = /M\s*[\d.]+\s+([\d.]+)\s*L\s*[\d.]+\s+([\d.]+)/g;
+      let s;
+      while ((s = segRe.exec(pm[1])) !== null) {
+        ys.add(parseFloat(s[1]));
+        ys.add(parseFloat(s[2]));
+      }
+    }
+    const sorted = [...ys].sort((a, b) => a - b);
+    const inside = sorted.filter(y => y > 0 && y < vbH);
+    return inside.length ? inside[inside.length - 1] : null;
+  }
+  function findGlyphTopY(rawSvg) {
+    // Glyph paths have no stroke; they're filled outlines (Q-curves).
+    const glyphRe = /<path(?![^>]*stroke)[^>]*d="([^"]+)"/g;
+    let topY = Infinity;
+    let p;
+    while ((p = glyphRe.exec(rawSvg)) !== null) {
+      const nums = p[1].match(/-?\d+\.?\d*/g) || [];
+      for (let i = 1; i < nums.length; i += 2) {
+        const y = parseFloat(nums[i]);
+        if (y < topY) topY = y;
+      }
+    }
+    return topY === Infinity ? null : topY;
+  }
+
   // ── Preview SVG ────────────────────────────────────────────────────
-  // Thin wrapper around bwip-js's output. Three tweaks only:
-  //   1. Extend viewBox right by 6 modules → GS1-spec 7-module right QZ.
-  //   2. Override width/height attrs → physical mm for accurate print.
-  //   3. Strip the bwip-js white background rect → we sit on a white
+  // Thin wrapper around bwip-js's output:
+  //   1. Truncate data bars so they end exactly at the glyph top
+  //      (eliminates the canonical bwip-js overlap that makes data
+  //      bars show through digit interiors).
+  //   2. Extend viewBox right by 6 modules → GS1-spec 7-module right QZ.
+  //   3. Override width/height attrs → physical mm for accurate print.
+  //   4. Strip the bwip-js white background rect → we sit on a white
   //      card; no need for a white block that could obscure neighbours.
   function toSvg({ digits, heightMm, xDimMm, includeText = true }) {
     const norm = normalizeEan13(digits);
     if (!norm.ok) throw new Error(norm.error);
 
-    const raw = bwipFullSvg(norm.digits, heightMm, includeText);
+    let raw = bwipFullSvg(norm.digits, heightMm, includeText);
 
     // Parse bwip's viewBox to get its native dimensions.
     const vbMatch = /viewBox="([^"]+)"/.exec(raw);
@@ -122,35 +167,48 @@
     const origVbW = parseFloat(origVbW_str);
     const vbH     = parseFloat(vbH_str);
 
+    // Truncate data bars to clear the glyph area. With includeText=true
+    // bwip-js puts data bars at y=0..dataBarEnd and glyphs at
+    // y=glyphTop..vbH where glyphTop ≈ dataBarEnd - 3 — i.e., 3 units
+    // of overlap. We rewrite the bar end Y to match the glyph top so
+    // there's no overlap. effectiveDataEnd is then used to scale the
+    // physical height so the (now-shorter) data bars are still
+    // heightMm tall after stretching.
+    let effectiveDataEnd = vbH;       // includeText=false: bars are full height
+    if (includeText) {
+      const dataEnd  = findDataBarEndY(raw, vbH);
+      const glyphTop = findGlyphTopY(raw);
+      if (dataEnd != null && glyphTop != null && glyphTop < dataEnd) {
+        // bwip-js outputs bar segments as " {Y}L" (no space between Y
+        // and L). String-replace the data-bar end Y with the glyph top.
+        raw = raw.replace(
+          new RegExp(" " + dataEnd + "L", "g"),
+          " " + glyphTop + "L",
+        );
+        effectiveDataEnd = glyphTop;
+      } else if (dataEnd != null) {
+        effectiveDataEnd = dataEnd;
+      }
+    }
+
     // Physical width: 11 + 95 + 7 = 113 modules × X-dim.
-    // Physical height: scaled so the *data bars* end up `heightMm` tall.
-    //   bwip-js's vbH = dataBarUnits + TEXT_STRIP_UNITS (when includetext)
-    //   We want dataBarUnits → heightMm, so total physical = heightMm × vbH / dataBarUnits.
-    const textStripUnits = includeText ? TEXT_STRIP_UNITS : 0;
-    const dataBarUnits   = vbH - textStripUnits;
-    const newVbW   = origVbW + BWIP_EXTRA_RIGHT_QZ;
-    const physWmm  = TOTAL_MODULES * xDimMm;
-    const physHmm  = heightMm * vbH / dataBarUnits;
+    // Physical height: scale so data bars (truncated to effectiveDataEnd)
+    // come out at exactly heightMm tall. The remainder of vbH below
+    // becomes the text strip where the OCR-B digits sit cleanly.
+    const newVbW  = origVbW + BWIP_EXTRA_RIGHT_QZ;
+    const physWmm = TOTAL_MODULES * xDimMm;
+    const physHmm = heightMm * vbH / effectiveDataEnd;
 
     return raw
       // Strip the white background rect (handle whitespace variations).
       .replace(/<rect\s+[^>]*?fill="#FFFFFF"[^>]*?\/>\s*/i, "")
       // Extend the viewBox right by 6 modules → GS1-spec 7-module right QZ.
       .replace(/\sviewBox="[^"]*"/, ` viewBox="0 0 ${newVbW} ${vbH}"`)
-      // bwip's SVG has no width/height attrs — insert them at physical mm
-      // so screen + print render at exact physical size.
-      //
-      // preserveAspectRatio="none" is REQUIRED here: the viewBox aspect
-      // (113 modules × ~58 pts ≈ 1.95) doesn't match the physical
-      // container aspect (113×xDimMm by physHmm). With the default
-      // `xMidYMid meet` the browser uniform-scales the viewBox to fit
-      // one axis, leaving empty space on the other — and bwip-js's
-      // glyph paths (positioned at y≈50-58) then visually overlap the
-      // data bars (y=0-52.69) because both get squashed into the same
-      // physical height. Forcing non-uniform stretch keeps each axis at
-      // exactly the user's chosen X-dim and bar height; the OCR-B
-      // glyphs end up slightly taller than wide but still scan + read
-      // perfectly.
+      // bwip's SVG has no width/height attrs — insert them at physical
+      // mm so screen + print render at exact physical size.
+      // preserveAspectRatio="none" stretches each axis independently
+      // (viewBox is 113×~58 ≈ 1.95 aspect, container is wider relative)
+      // so bars land at exactly the user's X-dim AND bar height.
       .replace(
         /<svg\s/,
         `<svg width="${physWmm}mm" height="${physHmm}mm" ` +
@@ -185,14 +243,14 @@
       .parseFromString(svgString, "image/svg+xml")
       .documentElement;
 
-    // Physical dimensions: same formula as the preview SVG so what the
-    // user sees on screen exactly matches the printed output.
-    const physWmm = TOTAL_MODULES * xDimMm;
-    const vbMatch = /viewBox="([^"]+)"/.exec(svgString);
-    const vbH = vbMatch ? parseFloat(vbMatch[1].split(/\s+/)[3]) : heightMm;
-    const textStripUnits = includeText ? TEXT_STRIP_UNITS : 0;
-    const dataBarUnits = vbH - textStripUnits;
-    const physHmm = heightMm * vbH / dataBarUnits;
+    // Physical dimensions: read them directly off the SVG that toSvg
+    // just produced. This guarantees preview and PDF use IDENTICAL
+    // sizing (including any bar-truncation adjustments toSvg made for
+    // glyph clearance) without duplicating the formula here.
+    const widthMatch  = /\swidth="([\d.]+)mm"/.exec(svgString);
+    const heightMatch = /\sheight="([\d.]+)mm"/.exec(svgString);
+    const physWmm = widthMatch  ? parseFloat(widthMatch[1])  : TOTAL_MODULES * xDimMm;
+    const physHmm = heightMatch ? parseFloat(heightMatch[1]) : heightMm;
 
     // svg2pdf returns a Promise that resolves once the SVG is fully
     // embedded as PDF vector commands. The viewBox is scaled into the
