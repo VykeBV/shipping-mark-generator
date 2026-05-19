@@ -1264,6 +1264,17 @@ function App() {
 
   return (
     <>
+      {/* In-development banner — pinned to the top of the viewport so
+          users are always aware we're actively iterating on the tool
+          while they're using it. Matches the yellow notice inside the
+          welcome card so the message is consistent across surfaces.
+          Sits OUTSIDE .stage because .stage gets a transform: scale()
+          for fit-to-frame rendering — putting the banner inside would
+          shrink it along with the card. Hidden by body.vyke-locked
+          while the welcome modal is up (it already shows the message). */}
+      <div className="vyke-dev-banner" role="status" aria-live="polite">
+        🚧 <b>In development</b> — we're shipping changes while you use the tool. Some features may behave oddly.
+      </div>
       <div className="stage" ref={stageRef}>
         <div
           className="shipping-mark"

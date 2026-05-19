@@ -100,6 +100,14 @@
               {busy ? "One moment…" : "Continue →"}
             </button>
 
+            <div className="vyke-dev-notice">
+              <span className="vyke-dev-notice-icon" aria-hidden="true">🚧</span>
+              <b>Heads up — this tool is still in active development.</b>
+              {" "}You may be using it while we're shipping changes, so
+              some features might not behave cleanly yet. If something
+              breaks, please let us know.
+            </div>
+
             <div className="vyke-welcome-fineprint">
               No password. We use your email to remember your presets and
               recognise you when you come back.
@@ -110,6 +118,10 @@
                   saved only on this device.
                 </>
               )}
+            </div>
+
+            <div className="vyke-welcome-footer">
+              Powered by <b>Xafai</b>
             </div>
           </div>
         </form>
