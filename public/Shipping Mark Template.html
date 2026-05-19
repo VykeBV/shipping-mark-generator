@@ -362,6 +362,58 @@
   .adv-icon-input { width: 56px !important; height: 26px !important; font-size: 11px !important; }
   .adv-icon-unit { color: rgba(255, 255, 255, 0.5); font-size: 10px; }
 
+  /* ─── Dark-mode overrides for tweaks-panel components nested in .adv-panel
+     The shared `.twk-*` components were styled for the LIGHT main panel
+     (dark text, `color: inherit` inputs). Inside the dark Advanced
+     panel that inheritance flips text white onto a near-white input
+     fill — invisible. These rules re-skin labels, values, inputs and
+     toggles for legibility on the dark surface without touching the
+     main panel. */
+  .adv-panel .twk-lbl { color: rgba(255, 255, 255, 0.82); }
+  .adv-panel .twk-val { color: rgba(255, 255, 255, 0.58); }
+  .adv-panel .twk-sect {
+    color: #9DC9E8;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    font-size: 9.5px;
+    text-transform: uppercase;
+  }
+  .adv-panel .twk-num {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.10);
+  }
+  .adv-panel .twk-num-lbl  { color: rgba(255, 255, 255, 0.65); }
+  .adv-panel .twk-num-unit { color: rgba(255, 255, 255, 0.50); }
+  .adv-panel .twk-num input { color: rgba(255, 255, 255, 0.92); }
+  .adv-panel .twk-field {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.10);
+    color: rgba(255, 255, 255, 0.92);
+  }
+  .adv-panel .twk-field::placeholder { color: rgba(255, 255, 255, 0.30); }
+  .adv-panel .twk-field:focus {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(157, 201, 232, 0.45);
+  }
+  .adv-panel .twk-slider {
+    background: rgba(255, 255, 255, 0.14);
+  }
+  .adv-panel .twk-slider::-webkit-slider-thumb {
+    background: #fff;
+    border-color: rgba(0, 0, 0, 0.25);
+  }
+  .adv-panel .twk-slider::-moz-range-thumb {
+    background: #fff;
+    border-color: rgba(0, 0, 0, 0.25);
+  }
+  .adv-panel .twk-toggle { background: rgba(255, 255, 255, 0.14); }
+  .adv-panel .twk-toggle[data-on="1"] { background: #34c759; }
+  .adv-panel .twk-btn.secondary {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .adv-panel .twk-btn.secondary:hover { background: rgba(255, 255, 255, 0.12); }
+
   .twk-footer {
     margin-top: 14px;
     padding-top: 12px;
@@ -755,6 +807,10 @@
     display: flex;
     flex-direction: column;
     gap: 2.5mm;
+    /* Hard clip so no element (icons, long brand text, oversized logo) can
+       ever escape into the bleed area visually. The PDF render uses the
+       same trim rectangle, so what you see is what prints. */
+    overflow: hidden;
   }
   /* Trim outline — visible only when crop marks are on, used as an editor
      guide. Stripped from PDF (we draw real crop marks via jsPDF). */

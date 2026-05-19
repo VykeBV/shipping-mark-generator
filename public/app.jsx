@@ -96,21 +96,34 @@ function availableIconsRegionMm(state) {
   return { availH: Math.max(0, usableH), availW: Math.max(0, usableW) };
 }
 
-// Pick the biggest icon size that fits all `n` enabled icons in a
-// 2-column grid within the given (width, height) rectangle. Returns
-// +∞ if there's plenty of room (no cap needed) and clamps to 6mm
-// minimum so icons never become invisible.
+// Pick the biggest icon size that fits all `n` enabled icons inside the
+// given (availW × availH) rectangle. Unlike a fixed-column grid, this
+// search tries every column count from 1 up to `n` and keeps the largest
+// size that still fits both dimensions — so a wide-but-short card (e.g.
+// 200 × 40 mm) lays icons out in MORE columns / FEWER rows automatically,
+// matching the CSS flex-wrap behaviour of `.sm-icons`. Floor at 3mm; if
+// even that doesn't fit, the trim's `overflow: hidden` will clip the
+// excess so nothing escapes into the bleed area.
 function iconFitMaxMm(n, region, gap = 2) {
   if (n <= 0) return Infinity;
   const { availH, availW } = region;
-  const rows = Math.ceil(n / 2);
-  // Vertical constraint
-  const hCap = rows > 0 ? (availH - (rows - 1) * gap) / rows : Infinity;
-  // Horizontal constraint (2 cols share the available width)
-  const wCap = (availW - gap) / 2;
-  const cap = Math.min(hCap, wCap);
-  if (!Number.isFinite(cap) || cap <= 6) return 6;
-  return cap;
+  if (availW <= 0 || availH <= 0) return 3;
+  let best = 0;
+  for (let cols = 1; cols <= n; cols++) {
+    const rows = Math.ceil(n / cols);
+    // Largest size that fits horizontally with this column count.
+    const wCap = (availW - (cols - 1) * gap) / cols;
+    // Largest size that fits vertically with this row count.
+    const hCap = (availH - (rows - 1) * gap) / rows;
+    const sz = Math.min(wCap, hCap);
+    if (sz > best) best = sz;
+  }
+  // Soft cap at 14mm (above that, an icon larger than the default looks
+  // odd) and floor at 3mm (trim clips anything smaller that still
+  // overflows — fine for the rare extreme case).
+  if (best > 14) return 14;
+  if (best < 3) return 3;
+  return best;
 }
 
 // Maximum on-label width of the icons block in mm. Matches the
