@@ -66,15 +66,17 @@ function getIconMeta(key, customIcons) {
 // Resolve the size (mm) to use for a given enabled icon. Per-icon overrides
 // (set in the Advanced panel) take precedence; otherwise the global icon
 // size applies. Returns 14mm as a final safety fallback.
+//
+// No auto-clamping: the slider is the user's source of truth. An earlier
+// version silently clamped to `iconFitMaxMm` to prevent overflow on tiny
+// cards, but that made the slider feel broken at large values. Instead,
+// `.sm-trim { overflow: hidden }` clips any preview overflow so the user
+// sees exactly what they're getting and can dial it down themselves.
 function sizeFor(key, state) {
   const override = state.iconSizesMm && state.iconSizesMm[key];
-  const requested = Number.isFinite(override) && override > 0
+  return Number.isFinite(override) && override > 0
     ? override
     : (state.iconSizeMm || 14);
-  // Apply the global "fit to available body" cap (computed by the layout
-  // effect) so icons can't push outside the trim area on very short cards.
-  const cap = state.__iconFitMaxMm;
-  return Number.isFinite(cap) && cap > 0 && cap < requested ? cap : requested;
 }
 
 // How much vertical & horizontal space the icons block has, given the
@@ -556,12 +558,11 @@ function App() {
       ...(state.customIcons || []).filter(c => state.icons && state.icons[c.key]).map(c => c.key),
     ];
     const ICON_GAP = 2;
-    // Apply the same auto-fit cap the live preview uses so the icons
-    // don't extend past the trim area on short or narrow cards.
-    const fitCap = iconFitMaxMm(enabledIcons.length, availableIconsRegionMm(state));
-    const stateForPack = { ...state, __iconFitMaxMm: fitCap };
-    // Pack icons using the same wrap rules as CSS (max-width 32mm).
-    const packed = packIcons(enabledIcons, stateForPack, ICON_GAP);
+    // Pack icons using the same wrap rules as CSS (max-width 32mm). No fit
+    // cap — sizeFor reads the user's slider value directly; if that causes
+    // overflow, the .sm-trim clip in the preview makes it obvious and the
+    // PDF will draw exactly what the preview shows.
+    const packed = packIcons(enabledIcons, state, ICON_GAP);
     const iconsBlockW = packed.totalW;
 
     const rightEdgeX = trimX + W - PAD_X;
@@ -1168,12 +1169,10 @@ function App() {
     ...(t.customIcons || []).filter(c => t.icons && t.icons[c.key]).map(c => c.key),
   ];
 
-  // Compute the largest icon size that still lets every enabled icon fit
-  // inside the available body region (both width and height). We thread
-  // this into a fresh state copy (`stateWithFit`) for sizeFor() to read,
-  // keeping the helper pure so the PDF renderer can reuse it.
-  const iconFitCap = iconFitMaxMm(enabledIcons.length, availableIconsRegionMm(t));
-  const stateWithFit = { ...t, __iconFitMaxMm: iconFitCap };
+  // Icon sizing reads directly from the user's slider value (t.iconSizeMm)
+  // and any per-icon overrides in t.iconSizesMm. `.sm-trim` has
+  // `overflow: hidden` so anything that doesn't fit gets cleanly clipped
+  // — better UX than silently overriding the slider.
 
   // ── Icon upload (custom SVG → adds to library + auto-enables) ─────
   const iconInputRef = useRef(null);
@@ -1271,7 +1270,7 @@ function App() {
                   {enabledIcons.map((k) => {
                     const meta = getIconMeta(k, t.customIcons);
                     if (!meta) return null;
-                    const sz = sizeFor(k, stateWithFit);
+                    const sz = sizeFor(k, t);
                     return (
                       <div
                         key={k}
