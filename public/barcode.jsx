@@ -104,32 +104,22 @@
     });
   }
 
-  // ── Helpers: detect bar/glyph Y boundaries in a bwip-js SVG ────────
-  // bwip-js positions the OCR-B digit glyph paths so they OVERLAP the
-  // bottom ~3 units of the data bars (e.g., for h=20: data bars end at
-  // y=53, glyphs start at y=50). The data bars then show through the
-  // white interiors of digits like "0" or "8" — it reads as the bars
-  // being "behind" the digits.
+  // ── Helpers: detect glyph top + truncate bars in a bwip-js SVG ─────
+  // bwip-js positions the OCR-B digit glyph paths starting INSIDE the
+  // data-bar area (e.g., for h=20: data bars end at y=53, guards end
+  // at y=58, glyphs run y=50-56). That produces TWO visual problems:
+  //   1. Data bars overlap the top of each digit (bars show through
+  //      the white interiors of "0" / "8").
+  //   2. Guard bars extend FULL HEIGHT through the digit strip, so
+  //      even after truncating data bars, vertical lines remain
+  //      crossing the digits — easy to misread as the bars being
+  //      "behind" the EAN.
   //
-  // We fix this by truncating the data bars in the SVG so they end
-  // exactly where the glyphs start. Guard bars (the deeper ones at
-  // y=0..vbH) stay full-height and frame the digits canonically.
-  function findDataBarEndY(rawSvg, vbH) {
-    const barPathRe = /<path[^>]*?stroke="#000000"[^>]*?d="([^"]+)"/g;
-    const ys = new Set();
-    let pm;
-    while ((pm = barPathRe.exec(rawSvg)) !== null) {
-      const segRe = /M\s*[\d.]+\s+([\d.]+)\s*L\s*[\d.]+\s+([\d.]+)/g;
-      let s;
-      while ((s = segRe.exec(pm[1])) !== null) {
-        ys.add(parseFloat(s[1]));
-        ys.add(parseFloat(s[2]));
-      }
-    }
-    const sorted = [...ys].sort((a, b) => a - b);
-    const inside = sorted.filter(y => y > 0 && y < vbH);
-    return inside.length ? inside[inside.length - 1] : null;
-  }
+  // Fix: truncate EVERY bar (data and guard) to end at glyphTop. The
+  // digit strip ends up completely clear of vertical bars; digits sit
+  // in a clean white strip below the bars. This drops the canonical
+  // "guards frame the digits" cosmetic, but gives unambiguous visual
+  // separation that scans the same.
   function findGlyphTopY(rawSvg) {
     // Glyph paths have no stroke; they're filled outlines (Q-curves).
     const glyphRe = /<path(?![^>]*stroke)[^>]*d="([^"]+)"/g;
@@ -143,6 +133,26 @@
       }
     }
     return topY === Infinity ? null : topY;
+  }
+  // Rewrite every bar-path's d attribute so any Y endpoint greater
+  // than glyphTop becomes glyphTop. We only touch <path> elements
+  // with stroke="#000000" (bar paths); glyph paths are filled, no
+  // stroke, and use Q-curves, so the bar-Y replacement doesn't risk
+  // mangling them.
+  function truncateBarsAt(rawSvg, glyphTop, vbH) {
+    return rawSvg.replace(
+      /(<path[^>]*?stroke="#000000"[^>]*?d=")([^"]+)(")/g,
+      (full, prefix, d, suffix) => {
+        const newD = d.replace(/ (\d+(?:\.\d+)?)L/g, (m, y) => {
+          const yNum = parseFloat(y);
+          // Only truncate bar endpoints that extend INTO the glyph area
+          // (Y between glyphTop and vbH). Top-of-bar endpoints (Y=0) and
+          // anything already shorter than glyphTop are preserved.
+          return (yNum > glyphTop && yNum <= vbH) ? ` ${glyphTop}L` : m;
+        });
+        return prefix + newD + suffix;
+      },
+    );
   }
 
   // ── Preview SVG ────────────────────────────────────────────────────
@@ -167,27 +177,17 @@
     const origVbW = parseFloat(origVbW_str);
     const vbH     = parseFloat(vbH_str);
 
-    // Truncate data bars to clear the glyph area. With includeText=true
-    // bwip-js puts data bars at y=0..dataBarEnd and glyphs at
-    // y=glyphTop..vbH where glyphTop ≈ dataBarEnd - 3 — i.e., 3 units
-    // of overlap. We rewrite the bar end Y to match the glyph top so
-    // there's no overlap. effectiveDataEnd is then used to scale the
-    // physical height so the (now-shorter) data bars are still
-    // heightMm tall after stretching.
+    // Truncate ALL bars (data + guards) to end at glyphTop so the
+    // digit strip is completely clear of any vertical bars. See
+    // truncateBarsAt() above for why we truncate guards too (without
+    // it, the 6 guard-bar verticals still cross the digit strip and
+    // read as "EAN overlapping the barcode").
     let effectiveDataEnd = vbH;       // includeText=false: bars are full height
     if (includeText) {
-      const dataEnd  = findDataBarEndY(raw, vbH);
       const glyphTop = findGlyphTopY(raw);
-      if (dataEnd != null && glyphTop != null && glyphTop < dataEnd) {
-        // bwip-js outputs bar segments as " {Y}L" (no space between Y
-        // and L). String-replace the data-bar end Y with the glyph top.
-        raw = raw.replace(
-          new RegExp(" " + dataEnd + "L", "g"),
-          " " + glyphTop + "L",
-        );
+      if (glyphTop != null && glyphTop < vbH) {
+        raw = truncateBarsAt(raw, glyphTop, vbH);
         effectiveDataEnd = glyphTop;
-      } else if (dataEnd != null) {
-        effectiveDataEnd = dataEnd;
       }
     }
 
