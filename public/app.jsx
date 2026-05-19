@@ -32,6 +32,11 @@ const DEFAULTS = {
   // Row text size in mm. Default 2.6 mm matches typical retail
   // shipping-mark text. Adjustable via the Advanced panel slider.
   rowTextSizeMm: 2.6,
+  // Display unit for size fields (W / H / Bleed). Internally everything
+  // is stored in mm (so layout, PDF render, presets are unit-stable);
+  // this only affects how numbers are SHOWN and entered. One of:
+  // "mm" | "cm" | "in".
+  sizeUnit: "mm",
 
   ean13: "1234567890128",  // canonical placeholder EAN-13 (valid check digit)
   barcodeHeightMm: 20,
@@ -128,6 +133,24 @@ function availableIconsRegionMm(state) {
     availH: Math.max(0, usableH),
     availW: Math.max(0, usableW),
   };
+}
+
+// ─── Display unit helpers ─────────────────────────────────────────────
+// Everything in state is stored in MM (so the layout calc, PDF render,
+// barcode dimensions and presets are unit-stable). The user can choose
+// to ENTER and VIEW size fields in millimetres, centimetres, or inches;
+// these helpers convert between mm and the chosen display unit.
+const UNIT_TO_MM = { mm: 1, cm: 10, in: 25.4 };
+const UNIT_DECIMALS = { mm: 1, cm: 2, in: 3 };
+const UNIT_STEP    = { mm: 1, cm: 0.1, in: 0.05 };
+function mmToUnit(valMm, unit) {
+  return valMm / (UNIT_TO_MM[unit] || 1);
+}
+function unitToMm(val, unit) {
+  return val * (UNIT_TO_MM[unit] || 1);
+}
+function unitLabel(unit) {
+  return unit === "in" ? "in" : unit;
 }
 
 // ─── Row-fit helpers ──────────────────────────────────────────────────
@@ -1656,12 +1679,57 @@ function App() {
         {user && <AccountChip user={user} onSignOut={handleSignOut} />}
 
         <TweakSection label="Size & bleed" />
-        <TweakNumber label="Width (mm)" value={t.widthMm} min={20} max={1000} step={1} unit="mm"
-                     onChange={(v) => setTweak("widthMm", v)} />
-        <TweakNumber label="Height (mm)" value={t.heightMm} min={20} max={1000} step={1} unit="mm"
-                     onChange={(v) => setTweak("heightMm", v)} />
-        <TweakSlider label="Bleed" value={t.bleedMm} min={0} max={10} step={0.5} unit="mm"
-                     onChange={(v) => setTweak("bleedMm", v)} />
+        {/* Display-unit selector. Stored value stays in mm internally so
+            the layout / PDF / presets are unit-stable; this only changes
+            how the numbers are shown and entered in the W / H / Bleed
+            inputs below. */}
+        <TweakSelect
+          label="Units"
+          value={t.sizeUnit || "mm"}
+          options={[
+            { label: "Millimetres (mm)", value: "mm" },
+            { label: "Centimetres (cm)", value: "cm" },
+            { label: "Inches (in)",      value: "in" },
+          ]}
+          onChange={(v) => setTweak("sizeUnit", v)}
+        />
+        {(() => {
+          const u = t.sizeUnit || "mm";
+          const dp = UNIT_DECIMALS[u];
+          const step = UNIT_STEP[u];
+          const round = (n) => Number(n.toFixed(dp));
+          return (
+            <>
+              <TweakNumber
+                label={`Width (${unitLabel(u)})`}
+                value={round(mmToUnit(t.widthMm, u))}
+                min={round(mmToUnit(20, u))}
+                max={round(mmToUnit(1000, u))}
+                step={step}
+                unit={unitLabel(u)}
+                onChange={(v) => setTweak("widthMm", unitToMm(v, u))}
+              />
+              <TweakNumber
+                label={`Height (${unitLabel(u)})`}
+                value={round(mmToUnit(t.heightMm, u))}
+                min={round(mmToUnit(20, u))}
+                max={round(mmToUnit(1000, u))}
+                step={step}
+                unit={unitLabel(u)}
+                onChange={(v) => setTweak("heightMm", unitToMm(v, u))}
+              />
+              <TweakSlider
+                label="Bleed"
+                value={round(mmToUnit(t.bleedMm, u))}
+                min={0}
+                max={round(mmToUnit(10, u))}
+                step={u === "mm" ? 0.5 : step}
+                unit={unitLabel(u)}
+                onChange={(v) => setTweak("bleedMm", unitToMm(v, u))}
+              />
+            </>
+          );
+        })()}
         <TweakToggle label="Show trim guide (editor only)" value={t.showTrimGuide}
                      onChange={(v) => setTweak("showTrimGuide", v)} />
         <TweakToggle label="Crop marks in exported PDF" value={t.showCropMarks}

@@ -517,6 +517,26 @@ function TweakNumber({ label, value, min, max, step = 1, unit = '', onChange }) 
     }
   };
 
+  // Arrow up / down bump the value by `step` (Shift × 10) — the same
+  // behaviour native <input type="number"> provides. We can't use a
+  // native number input because it clamps/rounds on every keystroke
+  // which destroys partial typing (see comment block above), so we
+  // bind keydown manually.
+  const onKeyDown = (e) => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+    const decimals = (String(step).split('.')[1] || '').length;
+    const dir = e.key === 'ArrowUp' ? 1 : -1;
+    const magnitude = e.shiftKey ? 10 : 1;
+    const base = Number(local);
+    const start = Number.isFinite(base) ? base : (Number(value) || 0);
+    const raw = start + dir * step * magnitude;
+    const snapped = Math.round(raw / step) * step;
+    const next = clamp(Number(snapped.toFixed(decimals)));
+    setLocal(String(next));
+    if (next !== value) onChange(next);
+  };
+
   // type="text" + inputMode="decimal" gives a numeric keyboard on mobile
   // without browsers clamping/rounding behind our back.
   return (
@@ -528,6 +548,7 @@ function TweakNumber({ label, value, min, max, step = 1, unit = '', onChange }) 
         value={local}
         onFocus={() => setFocused(true)}
         onChange={onInput}
+        onKeyDown={onKeyDown}
         onBlur={onBlur}
       />
       {unit && <span className="twk-num-unit">{unit}</span>}

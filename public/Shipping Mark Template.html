@@ -194,6 +194,28 @@
     background: rgba(255, 255, 255, 0.06) !important;
     box-shadow: 0 0 0 3px rgba(157, 201, 232, 0.12) !important;
   }
+  /* Number-input dark mode: TweakNumber renders as a .twk-num flex
+     container with an <input> inside. Without these overrides the
+     light-mode default (white-ish background + brown text) collides
+     with the dark panel and the digits become unreadable. Same
+     treatment as .twk-field so the W/H inputs match the EAN input. */
+  .twk-panel .twk-num {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    height: 30px !important;
+    border-radius: 8px !important;
+  }
+  .twk-panel .twk-num:focus-within {
+    border-color: #9DC9E8 !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    box-shadow: 0 0 0 3px rgba(157, 201, 232, 0.12) !important;
+  }
+  .twk-panel .twk-num-lbl  { color: rgba(255, 255, 255, 0.65) !important; }
+  .twk-panel .twk-num-unit { color: rgba(255, 255, 255, 0.50) !important; }
+  .twk-panel .twk-num input {
+    color: rgba(255, 255, 255, 0.95) !important;
+    font-weight: 500;
+  }
   .twk-panel select.twk-field {
     background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%239DC9E8' d='M0 0h10L5 6z'/></svg>") !important;
     background-repeat: no-repeat !important;
@@ -1370,18 +1392,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=14"></script>
-<script type="text/babel" src="auth.jsx?v=14"></script>
-<script type="text/babel" src="presets.jsx?v=14"></script>
-<script type="text/babel" src="activity.jsx?v=14"></script>
+<script type="text/babel" src="config.jsx?v=15"></script>
+<script type="text/babel" src="auth.jsx?v=15"></script>
+<script type="text/babel" src="presets.jsx?v=15"></script>
+<script type="text/babel" src="activity.jsx?v=15"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=14"></script>
-<script type="text/babel" src="icons.jsx?v=14"></script>
-<script type="text/babel" src="barcode.jsx?v=14"></script>
-<script type="text/babel" src="welcome.jsx?v=14"></script>
-<script type="text/babel" src="account-chip.jsx?v=14"></script>
-<script type="text/babel" src="presets-panel.jsx?v=14"></script>
-<script type="text/babel" src="app.jsx?v=14"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=15"></script>
+<script type="text/babel" src="icons.jsx?v=15"></script>
+<script type="text/babel" src="barcode.jsx?v=15"></script>
+<script type="text/babel" src="welcome.jsx?v=15"></script>
+<script type="text/babel" src="account-chip.jsx?v=15"></script>
+<script type="text/babel" src="presets-panel.jsx?v=15"></script>
+<script type="text/babel" src="app.jsx?v=15"></script>
 
 <style>
   #__standalone-tweaks-btn {
