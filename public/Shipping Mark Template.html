@@ -57,15 +57,20 @@
   .stage button:hover { cursor: pointer; }
 
   /* ─── Canvas navigation (zoom + pan controls) ─────────────────────
-     Floats in the bottom-left of the viewport, balanced against the
-     dev banner top-center and the overflow warning bottom-center.
-     Buttons: zoom out, zoom percentage (click to reset to 100% fit),
-     zoom in. Same dark glass treatment as the Tweaks panel for
-     visual consistency. */
+     Centred at the bottom of the viewport (between the page's left
+     edge and the Tweaks panel), mirroring the dev banner at top
+     centre. Buttons: zoom out, zoom percentage (click to reset to
+     fit-to-screen), zoom in. Same dark glass treatment as the
+     Tweaks panel for visual consistency. */
   .canvas-nav {
     position: fixed;
     bottom: 14px;
     left: 14px;
+    right: 352px;                /* clear of the 320 px Tweaks panel + gap */
+    margin-left: auto;
+    margin-right: auto;
+    width: fit-content;
+    max-width: 100%;
     z-index: 16;
     display: flex;
     align-items: center;
@@ -106,7 +111,7 @@
     .canvas-nav {
       bottom: auto;
       top: 56px;                       /* below the dev banner on mobile */
-      left: 14px;
+      right: 14px;                     /* no Tweaks panel on mobile */
     }
   }
   .mobile-topbar { display: none; }
@@ -781,7 +786,7 @@
      action button. */
   .vyke-canvas-warnings {
     position: fixed;
-    bottom: 14px;
+    bottom: 60px;                /* above the centred canvas-nav pill */
     left: 14px;
     right: 352px;                /* clear of the 320 px Tweaks panel + gap */
     margin-left: auto;
@@ -1365,18 +1370,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=13"></script>
-<script type="text/babel" src="auth.jsx?v=13"></script>
-<script type="text/babel" src="presets.jsx?v=13"></script>
-<script type="text/babel" src="activity.jsx?v=13"></script>
+<script type="text/babel" src="config.jsx?v=14"></script>
+<script type="text/babel" src="auth.jsx?v=14"></script>
+<script type="text/babel" src="presets.jsx?v=14"></script>
+<script type="text/babel" src="activity.jsx?v=14"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=13"></script>
-<script type="text/babel" src="icons.jsx?v=13"></script>
-<script type="text/babel" src="barcode.jsx?v=13"></script>
-<script type="text/babel" src="welcome.jsx?v=13"></script>
-<script type="text/babel" src="account-chip.jsx?v=13"></script>
-<script type="text/babel" src="presets-panel.jsx?v=13"></script>
-<script type="text/babel" src="app.jsx?v=13"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=14"></script>
+<script type="text/babel" src="icons.jsx?v=14"></script>
+<script type="text/babel" src="barcode.jsx?v=14"></script>
+<script type="text/babel" src="welcome.jsx?v=14"></script>
+<script type="text/babel" src="account-chip.jsx?v=14"></script>
+<script type="text/babel" src="presets-panel.jsx?v=14"></script>
+<script type="text/babel" src="app.jsx?v=14"></script>
 
 <style>
   #__standalone-tweaks-btn {
@@ -1391,13 +1396,10 @@
   }
 
   #__help-btn {
-    /* Sits ABOVE the canvas navigation pill so the two bottom-left
-       controls don't overlap. canvas-nav is ~36 px tall + 14 px from
-       the bottom, plus a 10 px gap, puts the help button at
-       bottom: 60 px. On mobile canvas-nav docks at the top, so the
-       help button can sit at bottom: 16 px again (handled in the
-       mobile media query). */
-    position: fixed; left: 16px; bottom: 60px;
+    /* Back at the bottom-left corner now that the canvas-nav pill
+       lives centred at the bottom (was previously bottom-left, which
+       forced the help button up to bottom: 60 px to avoid overlap). */
+    position: fixed; left: 16px; bottom: 16px;
     z-index: 2147483645;
     width: 36px; height: 36px;
     padding: 0;
