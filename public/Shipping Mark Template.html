@@ -24,14 +24,15 @@
       radial-gradient(ellipse 80% 50% at 50% 0%, rgba(157,201,232,.05), transparent 60%),
       #2b2d31;
     color: #fff;
-    /* Flex with `align-items: stretch` so the canvas (.stage) gets the
-       FULL body content area (was previously align-items: center which,
-       combined with overflow: auto + width:100% on the child, collapsed
-       the stage to 0 × 0 in some browsers via the flex min-width: auto
-       rule). The stage uses `flex: 1` below to grow into the space. */
+    /* No padding — the canvas (.stage) fills the ENTIRE viewport so
+       the dark workspace extends behind the floating Tweaks panel,
+       just like Illustrator / Figma. The panel sits on top via
+       position: fixed; the stage's own padding-right keeps the
+       artboard centred in the VISIBLE area (not hidden behind the
+       panel) — see the .stage rules below. */
     display: flex;
     align-items: stretch;
-    padding: 16px 352px 16px 16px;
+    padding: 0;
     overflow: hidden;
   }
   /* Stage = the canvas viewport (Illustrator-style infinite workspace).
@@ -53,6 +54,16 @@
     user-select: none;
     -webkit-user-select: none;
     touch-action: none;          /* swallow browser pan/zoom for our own handlers */
+    /* Stage SPANS the full viewport (body has padding: 0). The
+       padding-right reserves room for the floating Tweaks panel
+       (320 px width + 16 px right margin = 336 px) so the artboard
+       flex-centres in the VISIBLE area (left of the panel) instead
+       of behind it. The stage's dark background still extends under
+       the panel — that's the design-tool aesthetic the user asked for. */
+    padding-right: 336px;
+  }
+  @media (max-width: 768px) {
+    .stage { padding-right: 0; }   /* no panel on mobile */
   }
   /* The shipping-mark card is the only flow child of .stage and gets
      flex-centred. flex-shrink: 0 keeps it at its natural mm size even
@@ -1420,18 +1431,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=20"></script>
-<script type="text/babel" src="auth.jsx?v=20"></script>
-<script type="text/babel" src="presets.jsx?v=20"></script>
-<script type="text/babel" src="activity.jsx?v=20"></script>
+<script type="text/babel" src="config.jsx?v=21"></script>
+<script type="text/babel" src="auth.jsx?v=21"></script>
+<script type="text/babel" src="presets.jsx?v=21"></script>
+<script type="text/babel" src="activity.jsx?v=21"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=20"></script>
-<script type="text/babel" src="icons.jsx?v=20"></script>
-<script type="text/babel" src="barcode.jsx?v=20"></script>
-<script type="text/babel" src="welcome.jsx?v=20"></script>
-<script type="text/babel" src="account-chip.jsx?v=20"></script>
-<script type="text/babel" src="presets-panel.jsx?v=20"></script>
-<script type="text/babel" src="app.jsx?v=20"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=21"></script>
+<script type="text/babel" src="icons.jsx?v=21"></script>
+<script type="text/babel" src="barcode.jsx?v=21"></script>
+<script type="text/babel" src="welcome.jsx?v=21"></script>
+<script type="text/babel" src="account-chip.jsx?v=21"></script>
+<script type="text/babel" src="presets-panel.jsx?v=21"></script>
+<script type="text/babel" src="app.jsx?v=21"></script>
 
 <style>
   #__standalone-tweaks-btn {

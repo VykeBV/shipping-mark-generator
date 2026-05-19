@@ -716,14 +716,15 @@ function App() {
       rowY += rowLineH + rowGapMm;
     });
 
-    // ─── 5. Handling icons — drawn as vectors from the live DOM SVGs,
-    //    placed via the same flex-wrap pack as the CSS preview so what
-    //    the user sees on screen is what comes out of the export.
-    if (enabledIcons.length) {
+    // ─── 5. Handling icons — drawn via svg2pdf (the same library we
+    //    use for the barcode) so SVG fills, strokes, and transforms
+    //    all render correctly to PDF. Replaces the previous hand-rolled
+    //    drawSvgToPdf walker which was emitting filled icons as hollow
+    //    outlines because of an incomplete fill-mode pipeline. svg2pdf
+    //    handles all of that via the BWIPP/jsPDF integration we
+    //    already loaded for the barcode.
+    if (enabledIcons.length && typeof pdf.svg === "function") {
       const card = document.querySelector(".shipping-mark");
-      // Built-ins are React-rendered into .sm-icon; customs are
-      // dangerouslySetInnerHTML'd into a child <span>. querySelector("svg")
-      // under .sm-icon[data-key=…] catches both.
       const svgByKey = {};
       if (card) {
         card.querySelectorAll(".sm-icon[data-key]").forEach(el => {
@@ -732,11 +733,44 @@ function App() {
           if (key && svg) svgByKey[key] = svg;
         });
       }
-      packed.placements.forEach(({ key, x, y, sz }) => {
-        const svg = svgByKey[key];
-        if (!svg) return;
-        drawSvgToPdf(pdf, svg, iconsLeftX + x, bodyTopY + y, sz, sz);
-      });
+      // svg2pdf needs each <svg> to be self-contained — most of our
+      // icons use `fill="currentColor"` which inherits from CSS, so we
+      // clone each SVG and bake in the resolved black colour before
+      // handing it to svg2pdf. Otherwise currentColor renders as
+      // 'inherit' in PDF context, which becomes invisible.
+      const placements = packed.placements;
+      for (const { key, x, y, sz } of placements) {
+        const src = svgByKey[key];
+        if (!src) continue;
+        const cloned = src.cloneNode(true);
+        // Resolve currentColor → black on every fill / stroke attr.
+        cloned.querySelectorAll("[fill]").forEach((el) => {
+          const f = el.getAttribute("fill");
+          if (f === "currentColor") el.setAttribute("fill", "#000");
+        });
+        cloned.querySelectorAll("[stroke]").forEach((el) => {
+          const s = el.getAttribute("stroke");
+          if (s === "currentColor") el.setAttribute("stroke", "#000");
+        });
+        // The cloned node must be in the DOM for svg2pdf to measure
+        // it. Attach to a hidden off-screen container, render, detach.
+        const holder = document.createElement("div");
+        holder.style.cssText = "position:absolute;left:-99999px;top:-99999px;pointer-events:none;";
+        holder.appendChild(cloned);
+        document.body.appendChild(holder);
+        try {
+          await pdf.svg(cloned, {
+            x: iconsLeftX + x,
+            y: bodyTopY + y,
+            width: sz,
+            height: sz,
+          });
+        } catch (err) {
+          console.warn("Icon", key, "failed to render via svg2pdf:", err);
+        } finally {
+          document.body.removeChild(holder);
+        }
+      }
     }
 
     // ─── 6. Crop marks (corner ticks at the trim boundary, in the bleed). ──
