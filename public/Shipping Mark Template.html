@@ -135,7 +135,10 @@
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    min-width: 280px;
+    /* Wide enough for the longest label ('Batch CSV → multi-page PDF')
+       to stay on one line, plus its small sub-label on the right. */
+    min-width: 360px;
+    white-space: nowrap;
     background: rgba(18, 19, 23, 0.96);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
@@ -633,7 +636,9 @@
   .adv-panel {
     position: fixed;
     right: 336px;             /* 320 (.twk-panel width) + 16 gutter */
-    top: 16px;
+    /* Docked below the global header bar (56 px + 12 px gap) so it
+       lines up with the Tweaks panel beside it. */
+    top: 68px;
     bottom: 16px;
     width: 320px;
     z-index: 30;
@@ -1199,17 +1204,22 @@
   .vyke-acc-pop {
     position: absolute;
     top: calc(100% + 4px);
-    left: 0; right: 0;
+    /* Anchor to the right edge of the chip with an explicit min-width
+       (was `left: 0; right: 0` which made the popover the chip's own
+       narrow width — long emails like tim@vyke.design wrapped mid-
+       word). 240 px keeps a typical email on one line. */
+    right: 0;
+    min-width: 240px;
     z-index: 30;
     background: rgba(18, 19, 23, 0.98);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
-    padding: 10px 12px;
+    padding: 12px 14px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
     font: 11.5px/1.45 "Inter", "Roboto", sans-serif;
     color: rgba(255, 255, 255, 0.85);
   }
-  .vyke-acc-pop-email { font-weight: 600; color: #fff; word-break: break-all; }
+  .vyke-acc-pop-email { font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .vyke-acc-pop-status {
     margin-top: 4px;
     color: rgba(255, 255, 255, 0.5);
@@ -1650,18 +1660,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=26"></script>
-<script type="text/babel" src="auth.jsx?v=26"></script>
-<script type="text/babel" src="presets.jsx?v=26"></script>
-<script type="text/babel" src="activity.jsx?v=26"></script>
+<script type="text/babel" src="config.jsx?v=27"></script>
+<script type="text/babel" src="auth.jsx?v=27"></script>
+<script type="text/babel" src="presets.jsx?v=27"></script>
+<script type="text/babel" src="activity.jsx?v=27"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=26"></script>
-<script type="text/babel" src="icons.jsx?v=26"></script>
-<script type="text/babel" src="barcode.jsx?v=26"></script>
-<script type="text/babel" src="welcome.jsx?v=26"></script>
-<script type="text/babel" src="account-chip.jsx?v=26"></script>
-<script type="text/babel" src="presets-panel.jsx?v=26"></script>
-<script type="text/babel" src="app.jsx?v=26"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=27"></script>
+<script type="text/babel" src="icons.jsx?v=27"></script>
+<script type="text/babel" src="barcode.jsx?v=27"></script>
+<script type="text/babel" src="welcome.jsx?v=27"></script>
+<script type="text/babel" src="account-chip.jsx?v=27"></script>
+<script type="text/babel" src="presets-panel.jsx?v=27"></script>
+<script type="text/babel" src="app.jsx?v=27"></script>
 
 <style>
   #__standalone-tweaks-btn {
