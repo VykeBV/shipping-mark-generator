@@ -29,6 +29,9 @@ const DEFAULTS = {
     { label: "Gross Weight (kg)", value: "" },
     { label: "Country", value: "" },
   ],
+  // Row text size in mm. Default 2.6 mm matches typical retail
+  // shipping-mark text. Adjustable via the Advanced panel slider.
+  rowTextSizeMm: 2.6,
 
   ean13: "1234567890128",  // canonical placeholder EAN-13 (valid check digit)
   barcodeHeightMm: 20,
@@ -129,19 +132,23 @@ function availableIconsRegionMm(state) {
 
 // ─── Row-fit helpers ──────────────────────────────────────────────────
 // Mirror the .sm-row / .sm-rows CSS so JS can decide whether more rows
-// will fit. Each row is one line of 2.6 mm Roboto at line-height 1.25
-// (= 3.25 mm), and rows are stacked with 0.8 mm gaps. The "+ Add row"
-// button below the rows takes ~4 mm of additional height. Approximations
-// — if a row's value wraps to multiple lines, real height will exceed
-// our estimate, but the overflow warning will still catch it once it
-// actually clips.
-const ROW_LINE_H_MM = 2.6 * 1.25;     // 3.25 mm per row
+// will fit. Each row is one line of Roboto at line-height 1.25, stacked
+// with 0.8 mm gaps. The "+ Add row" button below takes ~4 mm. Text size
+// is user-configurable via state.rowTextSizeMm (default 2.6 mm).
+// Approximations — if a row's value wraps to multiple lines, real
+// height will exceed our estimate, but the overflow warning will catch
+// it once it actually clips.
 const ROW_GAP_MM    = 0.8;            // .sm-rows gap
 const ADD_BTN_H_MM  = 4.0;            // .sm-row-add approximate height
 
-function rowsBlockHeightMm(rowCount) {
+function rowLineHeightMm(state) {
+  return (state.rowTextSizeMm || 2.6) * 1.25;
+}
+
+function rowsBlockHeightMm(rowCount, state) {
   if (rowCount <= 0) return ADD_BTN_H_MM;
-  return rowCount * ROW_LINE_H_MM
+  const lineH = rowLineHeightMm(state);
+  return rowCount * lineH
        + (rowCount - 1) * ROW_GAP_MM
        + ADD_BTN_H_MM
        + 1.5;                          // small breathing room
@@ -151,7 +158,7 @@ function rowsBlockHeightMm(rowCount) {
 // the body's available height (= the same region icons share).
 function rowsOverflow(rowCount, state) {
   const availH = availableIconsRegionMm(state).availH;
-  return rowsBlockHeightMm(rowCount) > availH + 0.01;
+  return rowsBlockHeightMm(rowCount, state) > availH + 0.01;
 }
 
 // True when adding one MORE row would NOT overflow.
@@ -652,7 +659,10 @@ function App() {
     // ─── 4. Text rows (left column). ─────────────────────────────────
     const rowsLeftX = trimX + PAD_X;
     const rowsRightLimit = iconsLeftX - 3;
-    const rowSizeMm = 2.6;
+    // Row text size — driven by state so the user's slider in
+    // Advanced settings affects the PDF render the same way it
+    // affects the preview (.sm-row { font-size: var(--row-text-size-mm) }).
+    const rowSizeMm = state.rowTextSizeMm || 2.6;
     const rowGapMm = 0.8;
     const rowLineH = rowSizeMm * 1.25;
 
@@ -983,6 +993,14 @@ function App() {
   // SVG path emitter — supports M/L/H/V/Q/T/C/S/A/Z. Tokeniser is
   // length-aware so consecutive command-pairs (e.g. "M…L…L…" implicit
   // continuation) work without re-stating the letter.
+  //
+  // Sub-path flushing:
+  //   - Stroked paths (fill=false): emit each segment as a separate
+  //     pdf.lines call so individual line/curve segments stroke cleanly.
+  //   - Filled paths (fill=true): accumulate every segment into ONE
+  //     pdf.lines call with style="F" and closed=true. This is what
+  //     icons need — without it, every filled path silhouette renders
+  //     as a hollow outline (the bug the user saw in the PDF export).
   const drawPath = useCallback((pdf, d, T, sx, sy, fill) => {
     if (!d) return;
     const cmds = d.match(/[a-zA-Z]|-?\d*\.?\d+(?:e[+-]?\d+)?/g) || [];
@@ -992,16 +1010,40 @@ function App() {
     let cmd = "";
     let currentPath = [];
     const flushSubpath = () => {
-      for (let k = 0; k < currentPath.length - 1; k++) {
-        const a = currentPath[k], b = currentPath[k + 1];
-        if (b.curve) {
-          pdf.lines([[
-            b.c1x - a.tx, b.c1y - a.ty,
-            b.c2x - a.tx, b.c2y - a.ty,
-            b.tx - a.tx,  b.ty - a.ty,
-          ]], a.tx, a.ty, [1, 1], "S", false);
-        } else {
-          pdf.line(a.tx, a.ty, b.tx, b.ty);
+      if (currentPath.length < 2) return;
+      if (fill) {
+        // Build one big segments list relative to the previous point.
+        // pdf.lines moves a virtual cursor: each segment is relative to
+        // where the last one ended, so we use prev → current deltas.
+        const start = currentPath[0];
+        const segments = [];
+        for (let k = 1; k < currentPath.length; k++) {
+          const prev = currentPath[k - 1];
+          const b = currentPath[k];
+          if (b.curve) {
+            segments.push([
+              b.c1x - prev.tx, b.c1y - prev.ty,
+              b.c2x - prev.tx, b.c2y - prev.ty,
+              b.tx  - prev.tx, b.ty  - prev.ty,
+            ]);
+          } else {
+            segments.push([b.tx - prev.tx, b.ty - prev.ty]);
+          }
+        }
+        // style "F" = fill; closed=true closes the subpath back to start.
+        pdf.lines(segments, start.tx, start.ty, [1, 1], "F", true);
+      } else {
+        for (let k = 0; k < currentPath.length - 1; k++) {
+          const a = currentPath[k], b = currentPath[k + 1];
+          if (b.curve) {
+            pdf.lines([[
+              b.c1x - a.tx, b.c1y - a.ty,
+              b.c2x - a.tx, b.c2y - a.ty,
+              b.tx - a.tx,  b.ty - a.ty,
+            ]], a.tx, a.ty, [1, 1], "S", false);
+          } else {
+            pdf.line(a.tx, a.ty, b.tx, b.ty);
+          }
         }
       }
     };
@@ -1099,7 +1141,6 @@ function App() {
       } else { i++; }
     }
     if (currentPath.length) flushSubpath();
-    void fill;
   }, []);
 
   // Snapshot for batch mode + render-await helpers (mirrors DS).
@@ -1520,6 +1561,9 @@ function App() {
             // ~40 mm for the text rows column. Source-of-truth for the
             // same value the PDF packer uses, so wrap is identical.
             "--icons-max-w-mm": availableIconsRegionMm(t).availW,
+            // Row text size in mm — drives both `.sm-row { font-size }`
+            // for the preview and rowLineHeightMm for overflow math.
+            "--row-text-size-mm": t.rowTextSizeMm || 2.6,
           }}
           ref={cardRef}
         >
@@ -1857,6 +1901,24 @@ function App() {
           </div>
 
           <div className="adv-body">
+            {/* Row text size — drives both the preview's CSS variable
+                (.sm-row { font-size: var(--row-text-size-mm) }) and the
+                PDF render's rowSizeMm constant. Same row-fit math
+                applies — making text larger may trigger the rows
+                overflow warning sooner. */}
+            <div className="adv-sect">Row text size</div>
+            <TweakSlider
+              label="Text size"
+              value={t.rowTextSizeMm || 2.6}
+              min={1.5} max={6} step={0.1} unit="mm"
+              onChange={(v) => setTweak("rowTextSizeMm", v)}
+            />
+            <div className="adv-help">
+              Default 2.6&nbsp;mm matches typical retail shipping marks.
+              Larger text takes more vertical space; the canvas
+              warning will tell you if rows no longer fit.
+            </div>
+
             {/* Brand → logo black-and-white filter (only meaningful when a
                 logo is uploaded). */}
             <div className="adv-sect">Logo</div>

@@ -1178,7 +1178,11 @@
     align-items: baseline;
     gap: 0 2mm;
     font-family: "Roboto", sans-serif;
-    font-size: 2.6mm;
+    /* Font size driven by the --row-text-size-mm CSS variable that
+       JS sets on .shipping-mark from state.rowTextSizeMm. Default
+       2.6 mm matches retail shipping-mark text; user can override
+       in the Advanced panel. */
+    font-size: calc(var(--row-text-size-mm, 2.6) * 1mm);
     line-height: 1.25;
     color: #000;
     position: relative;
@@ -1361,18 +1365,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=11"></script>
-<script type="text/babel" src="auth.jsx?v=11"></script>
-<script type="text/babel" src="presets.jsx?v=11"></script>
-<script type="text/babel" src="activity.jsx?v=11"></script>
+<script type="text/babel" src="config.jsx?v=12"></script>
+<script type="text/babel" src="auth.jsx?v=12"></script>
+<script type="text/babel" src="presets.jsx?v=12"></script>
+<script type="text/babel" src="activity.jsx?v=12"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=11"></script>
-<script type="text/babel" src="icons.jsx?v=11"></script>
-<script type="text/babel" src="barcode.jsx?v=11"></script>
-<script type="text/babel" src="welcome.jsx?v=11"></script>
-<script type="text/babel" src="account-chip.jsx?v=11"></script>
-<script type="text/babel" src="presets-panel.jsx?v=11"></script>
-<script type="text/babel" src="app.jsx?v=11"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=12"></script>
+<script type="text/babel" src="icons.jsx?v=12"></script>
+<script type="text/babel" src="barcode.jsx?v=12"></script>
+<script type="text/babel" src="welcome.jsx?v=12"></script>
+<script type="text/babel" src="account-chip.jsx?v=12"></script>
+<script type="text/babel" src="presets-panel.jsx?v=12"></script>
+<script type="text/babel" src="app.jsx?v=12"></script>
 
 <style>
   #__standalone-tweaks-btn {
