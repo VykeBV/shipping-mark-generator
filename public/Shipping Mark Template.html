@@ -4,6 +4,15 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Vyke Create · Shipping Mark Generator</title>
+<!-- Discourage HTML caching while we're iterating quickly. GitHub Pages
+     serves with `Cache-Control: max-age=600`, which means browsers
+     would happily run an outdated barcode.jsx for up to 10 minutes
+     after each deploy. The script tags below also carry a `?v=N`
+     query string — bump it whenever any of the linked .jsx files
+     change to force every browser to refetch. -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; }
@@ -1241,19 +1250,26 @@
 
 <!-- Account / preset persistence layer. config.jsx initialises window.SUPABASE
      (or leaves it null for the localStorage fallback path) BEFORE the auth /
-     presets / activity modules read it at call time. -->
-<script type="text/babel" src="config.jsx"></script>
-<script type="text/babel" src="auth.jsx"></script>
-<script type="text/babel" src="presets.jsx"></script>
-<script type="text/babel" src="activity.jsx"></script>
+     presets / activity modules read it at call time.
 
-<script type="text/babel" src="tweaks-panel.jsx"></script>
-<script type="text/babel" src="icons.jsx"></script>
-<script type="text/babel" src="barcode.jsx"></script>
-<script type="text/babel" src="welcome.jsx"></script>
-<script type="text/babel" src="account-chip.jsx"></script>
-<script type="text/babel" src="presets-panel.jsx"></script>
-<script type="text/babel" src="app.jsx"></script>
+     The `?v=N` query strings are cache-busters. GitHub Pages serves these
+     .jsx files with a 10-minute browser cache, which means after every
+     deploy users keep running the OLD code until that cache expires.
+     Bump N (everywhere — they're all the same number on purpose) any
+     time you change ANY of the linked .jsx files; every browser will
+     then refetch on the next page load. -->
+<script type="text/babel" src="config.jsx?v=3"></script>
+<script type="text/babel" src="auth.jsx?v=3"></script>
+<script type="text/babel" src="presets.jsx?v=3"></script>
+<script type="text/babel" src="activity.jsx?v=3"></script>
+
+<script type="text/babel" src="tweaks-panel.jsx?v=3"></script>
+<script type="text/babel" src="icons.jsx?v=3"></script>
+<script type="text/babel" src="barcode.jsx?v=3"></script>
+<script type="text/babel" src="welcome.jsx?v=3"></script>
+<script type="text/babel" src="account-chip.jsx?v=3"></script>
+<script type="text/babel" src="presets-panel.jsx?v=3"></script>
+<script type="text/babel" src="app.jsx?v=3"></script>
 
 <style>
   #__standalone-tweaks-btn {
