@@ -80,22 +80,47 @@ function sizeFor(key, state) {
 }
 
 // How much vertical & horizontal space the icons block has, given the
-// current card dimensions. Used by both the auto-fit cap and the PDF
-// renderer so the layout stays in sync. All values in mm.
+// current card dimensions. The icons block sits in the right column of
+// the body grid; the left column holds the text rows and needs at least
+// ~40 mm to stay readable (or 40 % of body width — whichever is larger).
+// Whatever's left over after the barcode reservation goes to icons.
+//
+// Used by:
+//   • The CSS `--icons-max-w-mm` variable that gives .sm-icons its
+//     dynamic max-width (so wider cards lay out icons in more columns).
+//   • The PDF renderer's packIcons() call.
+//   • iconsOverflow() to detect when the user's chosen icon size can't
+//     fit, so the UI can surface a red warning.
 function availableIconsRegionMm(state) {
   const trimPadV = 8;                                       // 4mm top + 4mm bottom of .sm-trim
   const trimPadH = 10;                                      // 5mm left + 5mm right of .sm-trim
   const headerH = 12;                                       // approximate header height
   const headerGap = 2.5;                                    // .sm-trim flex-gap between header and body
+  const bodyGap = 4;                                        // .sm-body grid gap between rows and icons cols
   const barcodeBlockH = (state.barcodeHeightMm || 20) + 6;  // bars + human-readable + pad
   const barcodeBlockW = window.BARCODE
     ? window.BARCODE.widthMm({ xDimMm: state.barcodeXDimMm || 0.264 }) + 4
     : 36;
   const usableH = (state.heightMm || 90) - trimPadV - headerH - headerGap - barcodeBlockH;
-  // Cap icons block at min(32mm, 30% of body width) so it never starves the rows column.
   const bodyW = (state.widthMm || 130) - trimPadH - barcodeBlockW;
-  const usableW = Math.min(32, Math.max(0, bodyW * 0.35));
-  return { availH: Math.max(0, usableH), availW: Math.max(0, usableW) };
+  // Reserve at least max(40 mm, 40 % of body) for the text rows column.
+  const minRowsW = Math.max(40, bodyW * 0.40);
+  const usableW = bodyW - minRowsW - bodyGap;
+  return {
+    availH: Math.max(0, usableH),
+    availW: Math.max(0, usableW),
+  };
+}
+
+// True when the user's chosen icon size would overflow the available
+// region. Drives the red warning in the Tweaks panel.
+function iconsOverflow(enabledKeys, state) {
+  if (!enabledKeys || enabledKeys.length === 0) return false;
+  const region = availableIconsRegionMm(state);
+  if (region.availW <= 0 || region.availH <= 0) return true;
+  const packed = packIcons(enabledKeys, state, 2, region.availW);
+  return packed.totalW > region.availW + 0.01
+      || packed.totalH > region.availH + 0.01;
 }
 
 // Pick the biggest icon size that fits all `n` enabled icons inside the
@@ -128,15 +153,14 @@ function iconFitMaxMm(n, region, gap = 2) {
   return best;
 }
 
-// Maximum on-label width of the icons block in mm. Matches the
-// `max-width: 32mm` on `.sm-icons` in the stylesheet, so the live preview
-// and PDF wrap identically. A single icon larger than this gets its own
-// row at its full width (CSS does the same).
-const ICONS_BLOCK_MAX_MM = 32;
-
 // Pack enabled icons into rows using the same flex-wrap rules as CSS.
 // Returns { placements: [{key, x, y, sz}], totalW, totalH }.
-function packIcons(enabledKeys, state, gap = 2, maxW = ICONS_BLOCK_MAX_MM) {
+//
+// `maxW` is the icons block's max usable width in mm — passed in by the
+// caller so the live preview (CSS `--icons-max-w-mm`) and the PDF render
+// use the exact same wrap point. When omitted, defaults to a permissive
+// 200 mm (effectively single-row for typical icon sizes).
+function packIcons(enabledKeys, state, gap = 2, maxW = 200) {
   let rowX = 0, rowY = 0, rowH = 0, blockW = 0;
   const placements = [];
   enabledKeys.forEach((k) => {
@@ -558,11 +582,12 @@ function App() {
       ...(state.customIcons || []).filter(c => state.icons && state.icons[c.key]).map(c => c.key),
     ];
     const ICON_GAP = 2;
-    // Pack icons using the same wrap rules as CSS (max-width 32mm). No fit
-    // cap — sizeFor reads the user's slider value directly; if that causes
-    // overflow, the .sm-trim clip in the preview makes it obvious and the
-    // PDF will draw exactly what the preview shows.
-    const packed = packIcons(enabledIcons, state, ICON_GAP);
+    // Pack icons using the same wrap rules as CSS — the icons block
+    // max-width is dynamic (availableIconsRegionMm reserves space for
+    // the text rows column) and is fed to packIcons here so the PDF
+    // wrap point exactly mirrors the live preview.
+    const iconsMaxW = availableIconsRegionMm(state).availW;
+    const packed = packIcons(enabledIcons, state, ICON_GAP, iconsMaxW);
     const iconsBlockW = packed.totalW;
 
     const rightEdgeX = trimX + W - PAD_X;
@@ -1172,7 +1197,16 @@ function App() {
   // Icon sizing reads directly from the user's slider value (t.iconSizeMm)
   // and any per-icon overrides in t.iconSizesMm. `.sm-trim` has
   // `overflow: hidden` so anything that doesn't fit gets cleanly clipped
-  // — better UX than silently overriding the slider.
+  // — better UX than silently overriding the slider. We surface a red
+  // warning in the Tweaks panel when the user's chosen size overflows
+  // the available region so they know to dial it down.
+  const iconsRegion = availableIconsRegionMm(t);
+  const iconsDontFit = iconsOverflow(enabledIcons, t);
+  // Suggested size = the largest that would actually fit all enabled icons.
+  // Rounded down to 0.5 mm steps to match the slider.
+  const suggestedIconMm = iconsDontFit
+    ? Math.max(3, Math.floor(iconFitMaxMm(enabledIcons.length, iconsRegion) * 2) / 2)
+    : null;
 
   // ── Icon upload (custom SVG → adds to library + auto-enables) ─────
   const iconInputRef = useRef(null);
@@ -1229,6 +1263,11 @@ function App() {
             // barcode height + human-readable digits (≈ +3.5mm).
             "--barcode-w-mm": window.BARCODE.widthMm({ xDimMm: t.barcodeXDimMm }) + 4,
             "--barcode-block-h-mm": (t.barcodeHeightMm || 20) + 6,
+            // Dynamic max-width for the icons block: enough room for them
+            // to spread horizontally on wide cards, but reserves at least
+            // ~40 mm for the text rows column. Source-of-truth for the
+            // same value the PDF packer uses, so wrap is identical.
+            "--icons-max-w-mm": availableIconsRegionMm(t).availW,
           }}
           ref={cardRef}
         >
@@ -1388,7 +1427,22 @@ function App() {
           min={6} max={50} step={0.5} unit="mm"
           onChange={(v) => setTweak("iconSizeMm", v)}
         />
-        {(t.iconSizeMm || 14) < 19 && (
+        {iconsDontFit && (
+          <div className="twk-warning">
+            <b>Icons don't fit at {t.iconSizeMm || 14}&nbsp;mm.</b>
+            {" "}They'll be clipped in the preview and PDF.{" "}
+            {suggestedIconMm > 0 && (
+              <button
+                type="button"
+                className="twk-warning-action"
+                onClick={() => setTweak("iconSizeMm", suggestedIconMm)}
+              >
+                Fit to {suggestedIconMm}&nbsp;mm
+              </button>
+            )}
+          </div>
+        )}
+        {!iconsDontFit && (t.iconSizeMm || 14) < 19 && (
           <div className="twk-tip" style={{ borderColor: "rgba(255,180,80,.35)", background: "rgba(255,180,80,.06)" }}>
             ⚠︎ Below the ~19&nbsp;mm industry rule-of-thumb minimum — verify
             visibility on the package.

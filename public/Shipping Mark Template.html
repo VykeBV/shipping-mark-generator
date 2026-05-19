@@ -184,6 +184,38 @@
   }
   .twk-tip b { color: #9DC9E8 !important; font-weight: 600; }
 
+  /* Red warning card — surfaced when icons would overflow the trim
+     region at the user's chosen size. Same shape as .twk-tip but
+     red-tinted so it reads as an actual problem, not a hint. */
+  .twk-warning {
+    background: rgba(255, 90, 90, 0.10) !important;
+    border: 1px solid rgba(255, 90, 90, 0.42) !important;
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: rgba(255, 200, 200, 0.92);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .twk-warning b { color: #ffb0b0; font-weight: 700; }
+  .twk-warning-action {
+    appearance: none;
+    border: 1px solid rgba(255, 90, 90, 0.55);
+    background: rgba(255, 90, 90, 0.18);
+    color: #ffd6d6;
+    font: 600 10.5px/1 "Inter", "Roboto", system-ui, sans-serif;
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-top: 8px;
+    cursor: pointer;
+    display: inline-block;
+    transition: background .12s ease, color .12s ease, border-color .12s ease;
+  }
+  .twk-warning-action:hover {
+    background: rgba(255, 90, 90, 0.30);
+    border-color: rgba(255, 90, 90, 0.75);
+    color: #fff;
+  }
+
   /* ─── Advanced settings trigger ─────────────────────────────────────
      Deliberately styled to NOT look like a toggle — it's a pro
      affordance that opens a side-panel. Outlined card with a gear
@@ -944,7 +976,11 @@
     align-content: start;
     justify-content: center;
     align-items: center;
-    max-width: 32mm;
+    /* Max width is set dynamically by JS via --icons-max-w-mm so that the
+       icons block can spread across wider cards while still reserving
+       room for the text rows column. Same value is fed to the PDF
+       packIcons() so preview and export wrap identically. */
+    max-width: calc(var(--icons-max-w-mm, 32) * 1mm);
     max-height: 100%;
     overflow: hidden;
     flex-shrink: 0;
