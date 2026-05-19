@@ -879,29 +879,37 @@
     letter-spacing: -0.005em;
   }
 
-  /* Body grid: text rows on the left, icons on the right.
-     The barcode is positioned absolutely (bottom-right of the trim area)
-     so the live preview matches the PDF render exactly — the PDF render
-     also anchors the barcode to bottom-right with PAD_Y margin.
-     `--barcode-w-mm` (set from JS) reserves horizontal room so the icons
-     column doesn't slide under the barcode's space; `padding-bottom`
-     reserves vertical room below the body for the barcode itself. */
+  /* Body layout: text rows on the left, icons hugging the right edge.
+     Flex (not grid) so the rows column auto-shrinks to its content —
+     when rows are empty, icons get the entire body width to spread
+     into. `margin-left: auto` on .sm-icons keeps them anchored at the
+     right edge regardless of how much space the rows column takes.
+     The barcode is positioned absolutely (bottom-right of the trim
+     area); `padding-right` / `padding-bottom` reserve its space so
+     body content can't slide underneath it. */
   .sm-body {
     flex: 1;
-    display: grid;
-    grid-template-columns: 1fr auto;
+    display: flex;
+    align-items: flex-start;
     gap: 4mm;
     min-height: 0;
     padding-right: calc(var(--barcode-w-mm, 36) * 1mm);
     padding-bottom: calc(var(--barcode-block-h-mm, 26) * 1mm);
   }
 
-  /* Text rows column */
+  /* Text rows column — sized to content via flex.
+     - `flex: 0 1 auto` lets the column shrink to its actual content
+       width (collapses to ~the "+ Add row" button when all rows are
+       empty), so icons can flex into the freed space.
+     - `max-width: 60%` is a guardrail: a very long row label can't
+       starve the icons block; the label wraps inside the column. */
   .sm-rows {
     display: flex;
     flex-direction: column;
     gap: 0.8mm;
+    flex: 0 1 auto;
     min-width: 0;
+    max-width: 60%;
   }
   /* Row layout uses FLEX-WRAP so label/value behave naturally at any row
      width. When there's room, they sit on one line; when the row is too
@@ -974,16 +982,20 @@
     flex-wrap: wrap;
     gap: 2mm;
     align-content: start;
-    justify-content: center;
+    justify-content: flex-end;       /* right-align icons within the block */
     align-items: center;
-    /* Max width is set dynamically by JS via --icons-max-w-mm so that the
-       icons block can spread across wider cards while still reserving
-       room for the text rows column. Same value is fed to the PDF
-       packIcons() so preview and export wrap identically. */
+    /* margin-left: auto anchors the icons block to the right edge of
+       .sm-body. Combined with the rows column shrinking to content,
+       this gives icons all the leftward space they need when rows are
+       empty/small while always staying anchored next to the barcode. */
+    margin-left: auto;
+    flex: 0 0 auto;
+    /* Max width is set dynamically by JS via --icons-max-w-mm so the
+       icons block expands when the rows column shrinks. Same value is
+       fed to the PDF packIcons() so preview and export wrap identically. */
     max-width: calc(var(--icons-max-w-mm, 32) * 1mm);
     max-height: 100%;
     overflow: hidden;
-    flex-shrink: 0;
   }
   .sm-icon {
     color: #000;

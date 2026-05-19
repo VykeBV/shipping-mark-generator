@@ -99,15 +99,23 @@ function availableIconsRegionMm(state) {
   const trimPadH = 10;                                      // 5mm left + 5mm right of .sm-trim
   const headerH = 12;                                       // approximate header height
   const headerGap = 2.5;                                    // .sm-trim flex-gap between header and body
-  const bodyGap = 4;                                        // .sm-body grid gap between rows and icons cols
+  const bodyGap = 4;                                        // .sm-body flex gap between rows and icons
   const barcodeBlockH = (state.barcodeHeightMm || 20) + 6;  // bars + human-readable + pad
   const barcodeBlockW = window.BARCODE
     ? window.BARCODE.widthMm({ xDimMm: state.barcodeXDimMm || 0.264 }) + 4
     : 36;
   const usableH = (state.heightMm || 90) - trimPadV - headerH - headerGap - barcodeBlockH;
   const bodyW = (state.widthMm || 130) - trimPadH - barcodeBlockW;
-  // Reserve at least max(40 mm, 40 % of body) for the text rows column.
-  const minRowsW = Math.max(40, bodyW * 0.40);
+  // Content-aware rows column width:
+  // - With row content → reserve max(40 mm, 40 % of body) so labels stay readable.
+  // - With all rows empty → reserve 0, so icons flex into the freed space.
+  //   The CSS `.sm-rows` still naturally takes some width for the "+ Add row"
+  //   button (~13 mm) but we let icons claim everything up to the right edge;
+  //   any minor overlap is absorbed by the flex layout's auto sizing.
+  const hasRowContent = (state.rows || []).some(r =>
+    (r && r.label && r.label.trim()) || (r && r.value && r.value.trim())
+  );
+  const minRowsW = hasRowContent ? Math.max(40, bodyW * 0.40) : 0;
   const usableW = bodyW - minRowsW - bodyGap;
   return {
     availH: Math.max(0, usableH),
