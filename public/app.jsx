@@ -684,10 +684,13 @@ function App() {
     }
 
     // ─── 7. Barcode — drawn LAST so nothing overlaps it. ─────────────
+    // BARCODE.drawToPdf is now async (it delegates to svg2pdf.js, which
+    // walks the SVG DOM and emits PDF vector ops via a Promise). Already
+    // inside an async useCallback, so just await directly.
     const eanNorm = window.BARCODE.normalizeEan13(state.ean13);
     if (eanNorm.ok) {
       const barY = trimY + H - PAD_Y - state.barcodeHeightMm - 3.5;
-      window.BARCODE.drawToPdf(pdf, {
+      await window.BARCODE.drawToPdf(pdf, {
         digits: eanNorm.digits,
         x: barcodeX,
         y: barY,
@@ -1416,7 +1419,7 @@ function App() {
             ? <>
                 ✓ <b>{normEan.digits}</b> — width {eanWidthMm.toFixed(1)} mm at xDim {t.barcodeXDimMm} mm<br/>
                 <span style={{ opacity: 0.7, fontSize: "10.5px" }}>
-                  Encoded by <b style={{ color: "#9DC9E8" }}>bwip-js</b> (BWIPP reference) — ISO/IEC 15420 compliant, vector PDF.
+                  Rendered by <b style={{ color: "#9DC9E8" }}>bwip-js</b> (BWIPP reference) → <b style={{ color: "#9DC9E8" }}>svg2pdf.js</b> — ISO/IEC 15420 compliant, true vector PDF.
                 </span>
               </>
             : <>✗ <b style={{ color: "#ff8080" }}>{normEan.error}</b></>}

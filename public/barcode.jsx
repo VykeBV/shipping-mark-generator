@@ -1,37 +1,34 @@
-// barcode.jsx — EAN-13 generator backed by bwip-js (BWIPP port).
+// barcode.jsx — EAN-13 generation via two trusted MIT-licensed libraries.
 //
-// bwip-js (https://github.com/metafloor/bwip-js) is the JavaScript port of
-// BWIPP — "Barcode Writer in Pure PostScript" — the de-facto reference
-// implementation for barcode generation. It's used by Amazon, eBay, and
-// major retail systems, and is certified for ISO/IEC 15420 compliance.
+// Pipeline (end-to-end, zero custom parsing on our side):
 //
-// Rendering pipeline:
-//   1. bwip-js encodes the digits and lays out every bar at the exact
-//      module positions required by ISO/IEC 15420. We use it as the
-//      canonical source for the bar pattern.
-//   2. For the live preview, we use bwip-js's SVG output directly (it
-//      already renders bars + human-readable digits as glyph outlines —
-//      the exact OCR-B look retail scanners expect). We just rewrite
-//      the SVG's width/height to physical millimetres so the on-screen
-//      and print size are exact.
-//   3. For the PDF export, we parse bwip-js's SVG bar paths and re-emit
-//      every bar as a true vector jsPDF rectangle in CMYK pure black,
-//      then redraw the human-readable digits with jsPDF's Helvetica
-//      at the standard EAN-13 positions. No rasterisation anywhere.
+//   bwip-js     —→ standard EAN-13 SVG  ─→  preview (DOM insert)
+//   (BWIPP port)                          │
+//                                         └→  svg2pdf.js  ─→  jsPDF vector PDF
 //
-// Bar-path semantics in bwip-js SVG output:
-//   <path stroke="#000000" stroke-width="N" d="M cx y1 L cx y2 M ..."/>
-//   Each "M cx y1 L cx y2" pair is ONE bar:
-//     - cx is the bar's centre on the X axis (in module units, scaleX=1)
-//     - y1..y2 is its vertical span (in bwip-points, scaleY=1)
-//     - stroke-width N is the bar's width (in module units)
+// • bwip-js (https://github.com/metafloor/bwip-js) is the JavaScript port
+//   of BWIPP (Barcode Writer in Pure PostScript), the reference
+//   implementation for barcode rendering used by Amazon, eBay, GS1 and
+//   commercial label printers. With `includetext: true` it emits the
+//   canonical retail look: guard bars extended below data bars into the
+//   text area, plus OCR-B-style glyph outlines for the human-readable
+//   digits at the standard EAN-13 positions.
 //
-// Validation helpers (check digit + normalize) are kept in-house since
-// they run on every keystroke and we want them deterministic without
-// any library dependency.
+// • svg2pdf.js (https://github.com/yWorks/svg2pdf.js) walks an SVG DOM
+//   tree and re-emits every element as native jsPDF vector commands —
+//   bars become PDF rectangles, glyph outlines become PDF filled paths.
+//   No rasterisation; the PDF stays true vector at any zoom.
+//
+// Both libraries are MIT licensed (commercial use allowed). They're
+// loaded from jsDelivr in Shipping Mark Template.html; this file is
+// purely glue.
+//
+// The only logic we own here is GS1 check-digit validation (runs every
+// keystroke; standalone for determinism) and a thin viewBox/size wrapper
+// that adds the GS1-spec right quiet zone to bwip-js's output.
 
 (function () {
-  // ── Validation ─────────────────────────────────────────────────────
+  // ── Validation (in-house: small, deterministic, runs per keystroke) ──
   function computeCheckDigit(d12) {
     let sum = 0;
     for (let i = 0; i < 12; i++) {
@@ -58,224 +55,165 @@
     return { ok: false, error: `EAN-13 must be 12 or 13 digits (got ${s.length}).` };
   }
 
-  // ── Total barcode width ────────────────────────────────────────────
-  // GS1 General Specifications §5.2.3: EAN-13 = 95 data modules + 11
-  // module quiet zone left + 7 module quiet zone right = 113 modules.
-  // bwip-js's SVG includes ~11 modules left QZ and ~1 module right QZ
-  // by default; we add the missing right padding in our wrapper so the
-  // physical render reserves a GS1-compliant quiet zone end-to-end.
+  // ── Layout constants ───────────────────────────────────────────────
+  // GS1 General Specifications §5.2.3 quiet zones:
+  //   Left:  11 modules (bwip-js's `includetext: true` already includes this)
+  //   Right:  7 modules (bwip-js only includes ~1 module — we extend by 6)
+  // EAN-13 total = 11 + 95 + 7 = 113 modules wide.
+  const LEFT_QZ_MODULES  = 11;
+  const RIGHT_QZ_MODULES = 7;
+  const TOTAL_MODULES    = LEFT_QZ_MODULES + 95 + RIGHT_QZ_MODULES;
+  // bwip-js's `includetext: true` output appears to include only the
+  // 11 left + ~1 right modules; we extend right by this much:
+  const BWIP_EXTRA_RIGHT_QZ = 6;
+  // bwip-js reserves a fixed 5.31-unit strip below the data bars for the
+  // human-readable digits + guard-bar extensions when `includetext: true`.
+  // Verified empirically across bar heights 10–40 mm: the strip height is
+  // a constant, independent of `height`. (It's the OCR-B cap height + the
+  // textyoffset, in BWIPP's pt-based coord system.)
+  const TEXT_STRIP_UNITS = 5.31;
+
   function widthMm({ xDimMm }) {
-    return (11 + 95 + 7) * xDimMm;
+    return TOTAL_MODULES * xDimMm;
   }
 
-  // ── bwip-js bridge: bars only ──────────────────────────────────────
-  // Asks bwip-js for an SVG with the bar pattern only (no text — we
-  // render the human-readable digits ourselves so the same Helvetica
-  // appears in both preview and PDF). Returns the raw SVG plus its
-  // parsed viewBox dimensions for downstream coordinate conversion.
-  function bwipBarsSvg(digits, heightMm) {
+  // ── bwip-js → standard EAN-13 SVG ──────────────────────────────────
+  // Returns the verbatim bwip-js SVG string for the canonical retail
+  // look (guard bars extended below data, OCR-B glyphs, GS1 left QZ).
+  // We then wrap it for preview / PDF use.
+  function bwipFullSvg(digits, heightMm, includeText) {
     if (!window.bwipjs) {
       throw new Error(
         "bwip-js failed to load. Check the script tag in Shipping Mark Template.html — " +
         "the barcode cannot be generated without it.",
       );
     }
-    const svgString = window.bwipjs.toSVG({
-      bcid: "ean13",
-      text: digits,
-      scaleX: 1,
-      scaleY: 1,
-      height: heightMm,
-      includetext: false,                 // we add Helvetica digits ourselves
-      paddingwidth: 0,
-      paddingheight: 0,
+    return window.bwipjs.toSVG({
+      bcid:           "ean13",
+      text:           digits,
+      scaleX:         1,
+      scaleY:         1,
+      height:         heightMm,
+      includetext:    includeText,
+      textsize:       9,
+      textyoffset:    1,
+      paddingwidth:   0,
+      paddingheight:  0,
       backgroundcolor: "FFFFFF",
     });
-    const vbMatch = /viewBox="([^"]+)"/.exec(svgString);
-    if (!vbMatch) throw new Error("bwip-js returned SVG without a viewBox.");
-    const [, , vbW, vbH] = vbMatch[1].split(/\s+/).map(parseFloat);
-    return { svgString, vbW, vbH };
   }
-
-  // ── Bar extraction ─────────────────────────────────────────────────
-  // Parses every "M cx y1 L cx y2" pair out of the bwip-js bar paths.
-  // Returns [{ cx, yTop, yBot, w }] in bwip-js's native coords (X in
-  // modules, Y in bwip-points).
-  function extractBars(svgString) {
-    const bars = [];
-    const pathRe = /<path[^>]*?stroke="#000000"[^>]*?stroke-width="([\d.]+)"[^>]*?d="([^"]+)"/g;
-    let pm;
-    while ((pm = pathRe.exec(svgString)) !== null) {
-      const w = parseFloat(pm[1]);
-      const d = pm[2];
-      // Each segment: M cx y1 L cx y2  (cx repeats; line is purely vertical)
-      const segRe = /M\s*([\d.-]+)\s+([\d.-]+)\s*L\s*[\d.-]+\s+([\d.-]+)/g;
-      let s;
-      while ((s = segRe.exec(d)) !== null) {
-        const cx = parseFloat(s[1]);
-        const y1 = parseFloat(s[2]);
-        const y2 = parseFloat(s[3]);
-        bars.push({
-          cx,
-          yTop: Math.min(y1, y2),
-          yBot: Math.max(y1, y2),
-          w,
-        });
-      }
-    }
-    return bars;
-  }
-
-  // ── EAN-13 layout constants (in module units) ─────────────────────
-  // GS1 General Specifications §5.2.3 quiet zones:
-  const LEFT_QZ_MODULES  = 11;   // minimum quiet zone before first bar
-  const RIGHT_QZ_MODULES = 7;    // minimum quiet zone after last bar
-  // bwip-js with includetext:false / paddingwidth:0 outputs bars starting
-  // at X=0 (no quiet zone in the SVG itself). We translate them right by
-  // LEFT_QZ_MODULES and extend the viewBox to include both quiet zones.
-  // Total composed width = 11 + 95 + 7 = 113 modules.
-  //
-  // Standard EAN-13 human-readable digit positions (in our composed
-  // 113-module viewBox where bars are at modules 11..106):
-  //   First digit:    in the left quiet zone, right-aligned at module 9
-  //   Digits 2-7:     centred under the left bar group  → module 11 + (3 + 21) = 35
-  //   Digits 8-13:    centred under the right bar group → module 11 + (3 + 42 + 5 + 21) = 82
-  const FIRST_DIGIT_X = 9;
-  const LEFT_HALF_CX  = 35;
-  const RIGHT_HALF_CX = 82;
 
   // ── Preview SVG ────────────────────────────────────────────────────
-  // Wraps bwip-js's bar SVG into a new SVG sized in physical mm. We:
-  //   1. Translate bwip-js's bars (originally at X=0..95) right by 11
-  //      modules so the SVG's left edge is the start of the GS1 left
-  //      quiet zone.
-  //   2. Extend the viewBox width to 113 modules (= 11 + 95 + 7) so the
-  //      full GS1 quiet zones are inside the rendered SVG.
-  //   3. Extend the viewBox height to make room for human-readable
-  //      digits in Helvetica below the bars.
+  // Thin wrapper around bwip-js's output. Three tweaks only:
+  //   1. Extend viewBox right by 6 modules → GS1-spec 7-module right QZ.
+  //   2. Override width/height attrs → physical mm for accurate print.
+  //   3. Strip the bwip-js white background rect → we sit on a white
+  //      card; no need for a white block that could obscure neighbours.
   function toSvg({ digits, heightMm, xDimMm, includeText = true }) {
     const norm = normalizeEan13(digits);
     if (!norm.ok) throw new Error(norm.error);
 
-    const { svgString: rawSvg, vbH } = bwipBarsSvg(norm.digits, heightMm);
-    const yScale = heightMm / vbH;          // mm per bwip-point in Y
+    const raw = bwipFullSvg(norm.digits, heightMm, includeText);
 
-    // Extract everything inside <svg>…</svg>, minus the white bg rect.
-    const innerMatch = /<svg[^>]*>([\s\S]*?)<\/svg>/.exec(rawSvg);
-    const inner = innerMatch ? innerMatch[1] : "";
-    const innerNoBg = inner.replace(
-      /<rect\s+[^>]*?fill="#FFFFFF"[^>]*?\/>\s*/i, "",
-    );
+    // Parse bwip's viewBox to get its native dimensions.
+    const vbMatch = /viewBox="([^"]+)"/.exec(raw);
+    if (!vbMatch) throw new Error("bwip-js returned SVG without a viewBox.");
+    const [, , origVbW_str, vbH_str] = vbMatch[1].split(/\s+/);
+    const origVbW = parseFloat(origVbW_str);
+    const vbH     = parseFloat(vbH_str);
 
-    // Composed viewBox: 113 modules wide × (bars + text strip) tall.
-    const totalWidthModules = LEFT_QZ_MODULES + 95 + RIGHT_QZ_MODULES;
-    const physWmm = totalWidthModules * xDimMm;
+    // Physical width: 11 + 95 + 7 = 113 modules × X-dim.
+    // Physical height: scaled so the *data bars* end up `heightMm` tall.
+    //   bwip-js's vbH = dataBarUnits + TEXT_STRIP_UNITS (when includetext)
+    //   We want dataBarUnits → heightMm, so total physical = heightMm × vbH / dataBarUnits.
+    const textStripUnits = includeText ? TEXT_STRIP_UNITS : 0;
+    const dataBarUnits   = vbH - textStripUnits;
+    const newVbW   = origVbW + BWIP_EXTRA_RIGHT_QZ;
+    const physWmm  = TOTAL_MODULES * xDimMm;
+    const physHmm  = heightMm * vbH / dataBarUnits;
 
-    const textHeightMm = includeText ? 3.2 : 0;
-    const textHeightUnits = textHeightMm / yScale;
-    const newVbH = vbH + textHeightUnits;
-    const physHmm = heightMm + textHeightMm;
-
-    // Wrap the bwip-js bar paths in a <g> that shifts them into the
-    // left-QZ-offset position.
-    const barsTranslated =
-      `<g transform="translate(${LEFT_QZ_MODULES} 0)">${innerNoBg}</g>`;
-
-    let textEls = "";
-    if (includeText) {
-      const baselineY = (heightMm + textHeightMm * 0.85) / yScale;
-      const fontSizeUnits = (textHeightMm * 0.95) / yScale;
-      const letterSpacing = (xDimMm * 0.4).toFixed(3);
-      const fontAttrs =
-        `font-family="Helvetica,Arial,sans-serif" ` +
-        `font-size="${fontSizeUnits.toFixed(3)}" fill="#000"`;
-      textEls =
-        `<text x="${FIRST_DIGIT_X}" y="${baselineY.toFixed(3)}" text-anchor="end" ${fontAttrs}>${norm.digits[0]}</text>` +
-        `<text x="${LEFT_HALF_CX}" y="${baselineY.toFixed(3)}" text-anchor="middle" letter-spacing="${letterSpacing}" ${fontAttrs}>${norm.digits.slice(1, 7)}</text>` +
-        `<text x="${RIGHT_HALF_CX}" y="${baselineY.toFixed(3)}" text-anchor="middle" letter-spacing="${letterSpacing}" ${fontAttrs}>${norm.digits.slice(7, 13)}</text>`;
-    }
-
-    return `<svg xmlns="http://www.w3.org/2000/svg" ` +
-      `width="${physWmm}mm" height="${physHmm}mm" ` +
-      `viewBox="0 0 ${totalWidthModules} ${newVbH.toFixed(3)}" ` +
-      `shape-rendering="crispEdges" ` +
-      `data-ean="${norm.digits}" data-engine="bwip-js">` +
-      `${barsTranslated}${textEls}</svg>`;
+    return raw
+      // Strip the white background rect (handle whitespace variations).
+      .replace(/<rect\s+[^>]*?fill="#FFFFFF"[^>]*?\/>\s*/i, "")
+      // Extend the viewBox right by 6 modules → GS1-spec 7-module right QZ.
+      .replace(/\sviewBox="[^"]*"/, ` viewBox="0 0 ${newVbW} ${vbH}"`)
+      // bwip's SVG has no width/height attrs — insert them at physical mm
+      // so screen + print render at exact physical size.
+      .replace(
+        /<svg\s/,
+        `<svg width="${physWmm}mm" height="${physHmm}mm" ` +
+        `shape-rendering="crispEdges" ` +
+        `data-ean="${norm.digits}" data-engine="bwip-js+svg2pdf" `,
+      );
   }
 
   // ── PDF export ─────────────────────────────────────────────────────
-  // Extracts every bar from bwip-js's bar paths and re-emits each as a
-  // true-vector jsPDF rectangle in CMYK pure black. Human-readable
-  // digits are drawn with jsPDF's Helvetica at the standard EAN-13
-  // positions (matching the on-screen preview).
+  // Generates the SVG via toSvg(), parses it into a DOM Element, and
+  // hands it to svg2pdf.js which converts every <rect>/<path>/<text>
+  // into native jsPDF vector commands.
   //
-  // X coords from bwip-js are in modules → multiply by xDimMm.
-  // Y coords are in bwip-points → multiply by (heightMm / vbH).
-  function drawToPdf(pdf, opts) {
+  // Returns a Promise (svg2pdf is async). Callers in app.jsx must await.
+  async function drawToPdf(pdf, opts) {
     const { digits, x, y, xDimMm, heightMm,
             includeText = true } = opts;
     const norm = normalizeEan13(digits);
     if (!norm.ok) throw new Error(norm.error);
-
-    const { svgString: rawSvg, vbH } = bwipBarsSvg(norm.digits, heightMm);
-    const yScale = heightMm / vbH;
-    const bars = extractBars(rawSvg);
-
-    // CMYK pure black — max contrast on press, no transparency.
-    pdf.setFillColor(0, 0, 0, 1);
-
-    // bwip-js's bars start at X=0; we offset them by LEFT_QZ_MODULES so
-    // the PDF render matches the preview's GS1-compliant quiet zones.
-    const xOffsetMm = LEFT_QZ_MODULES * xDimMm;
-
-    for (const b of bars) {
-      const bx = xOffsetMm + (b.cx - b.w / 2) * xDimMm;
-      const bw = b.w * xDimMm;
-      const by = b.yTop * yScale;
-      const bh = (b.yBot - b.yTop) * yScale;
-      if (bw <= 0 || bh <= 0) continue;
-      pdf.rect(x + bx, y + by, bw, bh, "F");
+    if (!window.svg2pdf) {
+      throw new Error(
+        "svg2pdf.js failed to load. Check the script tag in Shipping Mark Template.html — " +
+        "vector PDF rendering requires it.",
+      );
     }
 
-    if (includeText) {
-      const textHeightMm = 3.2;
-      pdf.setTextColor(0, 0, 0, 1);
-      pdf.setFont("Helvetica", "normal");
-      // pt = mm × 2.83465. We render at 95 % of strip height so digits
-      // sit comfortably without touching the bars.
-      pdf.setFontSize(textHeightMm * 0.95 * 2.83465);
+    const svgString = toSvg({ digits: norm.digits, heightMm, xDimMm, includeText });
 
-      const baselineY = y + heightMm + textHeightMm * 0.85;
-      const firstDigitX = x + FIRST_DIGIT_X * xDimMm;
-      const leftCx      = x + LEFT_HALF_CX  * xDimMm;
-      const rightCx     = x + RIGHT_HALF_CX * xDimMm;
+    // Parse into a real DOM element (svg2pdf walks the DOM, not strings).
+    const svgEl = new DOMParser()
+      .parseFromString(svgString, "image/svg+xml")
+      .documentElement;
 
-      pdf.text(norm.digits[0], firstDigitX, baselineY, { align: "right" });
-      pdf.text(norm.digits.slice(1, 7), leftCx, baselineY,
-               { align: "center", charSpace: xDimMm * 0.4 });
-      pdf.text(norm.digits.slice(7, 13), rightCx, baselineY,
-               { align: "center", charSpace: xDimMm * 0.4 });
-    }
+    // Physical dimensions: same formula as the preview SVG so what the
+    // user sees on screen exactly matches the printed output.
+    const physWmm = TOTAL_MODULES * xDimMm;
+    const vbMatch = /viewBox="([^"]+)"/.exec(svgString);
+    const vbH = vbMatch ? parseFloat(vbMatch[1].split(/\s+/)[3]) : heightMm;
+    const textStripUnits = includeText ? TEXT_STRIP_UNITS : 0;
+    const dataBarUnits = vbH - textStripUnits;
+    const physHmm = heightMm * vbH / dataBarUnits;
+
+    // svg2pdf returns a Promise that resolves once the SVG is fully
+    // embedded as PDF vector commands. The viewBox is scaled into the
+    // (width, height) rect we pass.
+    await window.svg2pdf(svgEl, pdf, {
+      x: x,
+      y: y,
+      width:  physWmm,
+      height: physHmm,
+    });
   }
 
   // ── Self-check ─────────────────────────────────────────────────────
-  // Verify bwip-js is callable and producing a parseable bar pattern
-  // for a canonical test EAN. Logs success or a loud error so a broken
-  // CDN never silently breaks barcode generation in production.
+  // Runs on first load. Confirms both libraries are wired up correctly;
+  // logs the bwip-js + svg2pdf.js versions so the user has visible
+  // evidence in the console that the pipeline is working.
   function selfCheck() {
     try {
-      const { vbW, vbH, svgString } = bwipBarsSvg("5901234123457", 20);
-      const bars = extractBars(svgString);
-      if (bars.length < 25 || bars.length > 35) {
-        throw new Error("unexpected bar count: " + bars.length + " (expected ~30)");
-      }
+      if (!window.bwipjs) throw new Error("bwip-js not loaded");
+      const svg = bwipFullSvg("5901234123457", 20, true);
+      if (!/viewBox="[^"]+"/.test(svg)) throw new Error("bwip-js returned no viewBox");
+      const svg2pdfStatus = window.svg2pdf
+        ? "svg2pdf.js loaded"
+        : "svg2pdf.js NOT loaded (PDF export will fail)";
       console.info(
-        "[Vyke Create] Barcode engine ready: bwip-js v" +
+        "[Vyke Create] Barcode pipeline ready: bwip-js v" +
         (window.bwipjs.BWIPJS_VERSION || "?") +
         " (BWIPP " + (window.bwipjs.BWIPP_VERSION || "?") +
-        "). Test EAN 5901234123457 → " + bars.length + " bars in " +
-        vbW.toFixed(1) + " × " + vbH.toFixed(1) + " bwip units.",
+        ") → " + svg2pdfStatus + ". Test EAN 5901234123457 → " +
+        svg.length + " bytes of standard EAN-13 SVG.",
       );
+      if (!window.svg2pdf) {
+        console.warn("[Vyke Create] svg2pdf.js missing; preview will work but PDF export will throw.");
+      }
     } catch (e) {
       console.error("[Vyke Create] Barcode self-check FAILED:", e);
     }
@@ -287,9 +225,9 @@
     toSvg,
     drawToPdf,
     widthMm,
-    engine: "bwip-js",
+    engine: "bwip-js+svg2pdf",
   };
 
-  if (window.bwipjs) selfCheck();
+  if (window.bwipjs && window.svg2pdf) selfCheck();
   else window.addEventListener("load", selfCheck);
 })();
