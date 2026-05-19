@@ -1168,42 +1168,149 @@ function App() {
     });
   }, [renderPageIntoPdf, setTweak]);
 
-  // ── Auto-fit screen zoom ───────────────────────────────────────────
+  // ── Canvas navigation (fit-to-screen + user zoom + pan) ───────────
+  // The card is rendered at its real mm dimensions. We apply ONE
+  // combined transform to the card:
+  //   translate(panX, panY) scale(fitScale × userZoom)
+  // - fitScale: auto-computed so the card fills the available viewport
+  //   at userZoom = 1. Recomputed whenever the viewport or card
+  //   dimensions change.
+  // - userZoom: user-controlled (wheel, +/- buttons). Clamped [0.25, 6].
+  // - pan: user-controlled (drag on empty stage area). In screen px.
+  // .stage acts as the viewport (CSS: `overflow: hidden` + flex centre)
+  // so panned content is clipped at the viewport edges, not the
+  // viewport itself shifting in the page layout.
   const stageRef = useRef(null);
   const cardRef = useRef(null);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  // Ref mirror of zoom/pan so the wheel + drag handlers can read the
+  // latest values without re-binding on every change.
+  const zoomRef = useRef(1);
+  const panRef = useRef({ x: 0, y: 0 });
+  // Cached fit scale for the wheel handler (so zoom-at-cursor math
+  // can convert pixel deltas into card-space deltas).
+  const fitScaleRef = useRef(1);
+  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
+  useEffect(() => { panRef.current = pan; }, [pan]);
+
   useEffect(() => {
-    const fit = () => {
-      const stage = stageRef.current;
-      const card = cardRef.current;
-      if (!stage || !card) return;
+    const stage = stageRef.current;
+    const card = cardRef.current;
+    if (!stage || !card) return;
+
+    const apply = () => {
       const isMobile = window.matchMedia("(max-width: 768px)").matches;
-      const avW = isMobile ? window.innerWidth - 24 : window.innerWidth - 384;
-      const avH = isMobile ? (window.innerHeight * 0.30 - 24) : (window.innerHeight - 48);
-      const maxScale = isMobile ? 1.0 : 1.45;
+      const avW = stage.clientWidth;
+      const avH = stage.clientHeight;
       const cw = card.offsetWidth;
       const ch = card.offsetHeight;
-      if (cw === 0 || ch === 0) return;
-      const scale = Math.min(avW / cw, avH / ch, maxScale);
-      if (isMobile) {
-        stage.style.transform = "";
-        stage.style.width = "";
-        stage.style.height = "";
-        card.style.transform = `scale(${scale})`;
-        card.style.transformOrigin = "center";
-      } else {
-        card.style.transform = "";
-        card.style.transformOrigin = "";
-        stage.style.transform = `scale(${scale})`;
-        stage.style.width = cw + "px";
-        stage.style.height = ch + "px";
-      }
+      if (cw === 0 || ch === 0 || avW === 0 || avH === 0) return;
+      const maxFit = isMobile ? 1.0 : 1.45;
+      const fitScale = Math.min(avW / cw, avH / ch, maxFit);
+      fitScaleRef.current = fitScale;
+      const totalScale = fitScale * zoomRef.current;
+      const { x: px, y: py } = panRef.current;
+      card.style.transform = `translate(${px}px, ${py}px) scale(${totalScale})`;
+      card.style.transformOrigin = "center";
     };
-    fit();
-    const ro = new ResizeObserver(fit);
-    if (cardRef.current) ro.observe(cardRef.current);
-    window.addEventListener("resize", fit);
-    return () => { window.removeEventListener("resize", fit); ro.disconnect(); };
-  }, [t.widthMm, t.heightMm, t.bleedMm]);
+
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(stage);
+    ro.observe(card);
+    window.addEventListener("resize", apply);
+    return () => { window.removeEventListener("resize", apply); ro.disconnect(); };
+  }, [zoom, pan.x, pan.y, t.widthMm, t.heightMm, t.bleedMm]);
+
+  // ── Wheel zoom (cursor-relative) ──────────────────────────────────
+  // Scroll / pinch on the canvas zooms in and out, keeping whatever
+  // is under the cursor in the same screen position before and after.
+  // Math: if the cursor sits at screen-pixel (cx, cy) relative to the
+  // stage centre, the card-space point underneath the cursor is
+  // (cx − panX) / totalScale. We solve for the new pan so that point
+  // stays under the cursor at the new scale.
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const onWheel = (e) => {
+      e.preventDefault();
+      const oldZoom = zoomRef.current;
+      // Sensitivity: wheel deltaY of ±100 → ~10 % zoom change.
+      const delta = -e.deltaY / 1000;
+      const next = Math.max(0.25, Math.min(6, oldZoom * Math.exp(delta)));
+      if (next === oldZoom) return;
+      const rect = stage.getBoundingClientRect();
+      const cx = e.clientX - rect.left - rect.width / 2;
+      const cy = e.clientY - rect.top - rect.height / 2;
+      const ratio = next / oldZoom;
+      const oldPan = panRef.current;
+      setPan({
+        x: cx - (cx - oldPan.x) * ratio,
+        y: cy - (cy - oldPan.y) * ratio,
+      });
+      setZoom(next);
+    };
+    stage.addEventListener("wheel", onWheel, { passive: false });
+    return () => stage.removeEventListener("wheel", onWheel);
+  }, []);
+
+  // ── Click-and-drag pan ────────────────────────────────────────────
+  // Pan only fires when the pointer goes down on EMPTY stage area
+  // (not on the card itself — that lets the user click into editable
+  // text without accidentally panning). When the card is bigger than
+  // the viewport, dragging anywhere on .stage still pans because the
+  // empty margin around the card is still part of .stage.
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    let drag = null;
+    const onDown = (e) => {
+      // Skip if the user is interacting with something editable.
+      if (e.target.closest(".editable, button, input, [contenteditable]")) return;
+      // Skip if the user is interacting with our floating UI (nav, banners).
+      if (e.target.closest(".canvas-nav, .vyke-dev-banner, .vyke-canvas-warning")) return;
+      drag = {
+        startX: e.clientX, startY: e.clientY,
+        panX0: panRef.current.x, panY0: panRef.current.y,
+      };
+      stage.classList.add("is-panning");
+      try { e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId); } catch {}
+    };
+    const onMove = (e) => {
+      if (!drag) return;
+      setPan({
+        x: drag.panX0 + (e.clientX - drag.startX),
+        y: drag.panY0 + (e.clientY - drag.startY),
+      });
+    };
+    const onUp = () => {
+      if (!drag) return;
+      drag = null;
+      stage.classList.remove("is-panning");
+    };
+    stage.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      stage.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, []);
+
+  // Reset zoom + pan to default fit-to-screen view.
+  const resetView = useCallback(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, []);
+  // Programmatic zoom (used by +/- buttons). Zooms around the
+  // viewport centre — keeps the centred content in place.
+  const zoomBy = useCallback((factor) => {
+    setZoom((z) => Math.max(0.25, Math.min(6, z * factor)));
+  }, []);
 
   // Enabled icons = built-ins (in canonical ICON_ORDER) + any custom uploads
   // currently toggled on. Custom keys are stored in t.icons just like built-ins.
@@ -1301,6 +1408,34 @@ function App() {
           )}
         </div>
       )}
+
+      {/* Canvas navigation: zoom out / current zoom (click to reset) /
+          zoom in. Pinned to the bottom-left of the viewport so it
+          doesn't compete with the dev banner top-centre or the
+          overflow warning bottom-centre. Wheel-zoom + drag-pan still
+          work on the canvas itself; these buttons are the discoverable
+          fallback. */}
+      <div className="canvas-nav" role="toolbar" aria-label="Canvas navigation">
+        <button
+          type="button"
+          onClick={() => zoomBy(1 / 1.25)}
+          title="Zoom out (or scroll down on the canvas)"
+          aria-label="Zoom out"
+        >−</button>
+        <button
+          type="button"
+          className="canvas-nav-pct"
+          onClick={resetView}
+          title="Reset to fit-to-screen"
+        >{Math.round(zoom * 100)}%</button>
+        <button
+          type="button"
+          onClick={() => zoomBy(1.25)}
+          title="Zoom in (or scroll up on the canvas)"
+          aria-label="Zoom in"
+        >+</button>
+      </div>
+
       <div className="stage" ref={stageRef}>
         <div
           className="shipping-mark"

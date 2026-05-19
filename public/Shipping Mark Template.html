@@ -30,7 +30,85 @@
     padding: 16px 352px 16px 16px;
     overflow: hidden;
   }
-  .stage { transform-origin: center; display: block; }
+  /* Stage = the canvas viewport. Fills the body's content area
+     (everything not occupied by the Tweaks panel padding-right), clips
+     overflow so panned content can't escape the viewport, and centres
+     the card via flex. The actual zoom + pan transform lives on the
+     card inside (not on .stage itself) so the viewport stays put
+     while content moves underneath it. */
+  .stage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;       /* prevent browser pan/zoom on touchpads */
+  }
+  .stage.is-panning { cursor: grabbing; }
+  .stage:not(.is-panning):hover { cursor: grab; }
+  /* When pointer is over an editable / button / input, restore normal cursor */
+  .stage .editable:hover,
+  .stage button:hover,
+  .stage input:hover { cursor: text; }
+  .stage button:hover { cursor: pointer; }
+
+  /* ─── Canvas navigation (zoom + pan controls) ─────────────────────
+     Floats in the bottom-left of the viewport, balanced against the
+     dev banner top-center and the overflow warning bottom-center.
+     Buttons: zoom out, zoom percentage (click to reset to 100% fit),
+     zoom in. Same dark glass treatment as the Tweaks panel for
+     visual consistency. */
+  .canvas-nav {
+    position: fixed;
+    bottom: 14px;
+    left: 14px;
+    z-index: 16;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    background: rgba(18, 19, 23, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    backdrop-filter: blur(12px) saturate(140%);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.30);
+    font-family: "Inter", "Roboto", system-ui, -apple-system, sans-serif;
+  }
+  .canvas-nav button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.78);
+    font: 500 12px/1 inherit;
+    padding: 7px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    min-width: 32px;
+    transition: background .12s ease, color .12s ease;
+  }
+  .canvas-nav button:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+  }
+  .canvas-nav .canvas-nav-pct {
+    min-width: 52px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+  body.vyke-locked .canvas-nav { display: none; }
+  @media (max-width: 768px) {
+    .canvas-nav {
+      bottom: auto;
+      top: 56px;                       /* below the dev banner on mobile */
+      left: 14px;
+    }
+  }
   .mobile-topbar { display: none; }
 
   /* ─── Vyke Create dark Tweaks panel (identical to Data Sheet creator) ─ */
@@ -1258,18 +1336,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=9"></script>
-<script type="text/babel" src="auth.jsx?v=9"></script>
-<script type="text/babel" src="presets.jsx?v=9"></script>
-<script type="text/babel" src="activity.jsx?v=9"></script>
+<script type="text/babel" src="config.jsx?v=10"></script>
+<script type="text/babel" src="auth.jsx?v=10"></script>
+<script type="text/babel" src="presets.jsx?v=10"></script>
+<script type="text/babel" src="activity.jsx?v=10"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=9"></script>
-<script type="text/babel" src="icons.jsx?v=9"></script>
-<script type="text/babel" src="barcode.jsx?v=9"></script>
-<script type="text/babel" src="welcome.jsx?v=9"></script>
-<script type="text/babel" src="account-chip.jsx?v=9"></script>
-<script type="text/babel" src="presets-panel.jsx?v=9"></script>
-<script type="text/babel" src="app.jsx?v=9"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=10"></script>
+<script type="text/babel" src="icons.jsx?v=10"></script>
+<script type="text/babel" src="barcode.jsx?v=10"></script>
+<script type="text/babel" src="welcome.jsx?v=10"></script>
+<script type="text/babel" src="account-chip.jsx?v=10"></script>
+<script type="text/babel" src="presets-panel.jsx?v=10"></script>
+<script type="text/babel" src="app.jsx?v=10"></script>
 
 <style>
   #__standalone-tweaks-btn {
