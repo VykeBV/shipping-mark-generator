@@ -128,9 +128,10 @@ const __TWEAKS_STYLE = `
 
   .twk-btn{appearance:none;height:26px;padding:0 12px;border:0;border-radius:7px;
     background:rgba(0,0,0,.78);color:#fff;font:inherit;font-weight:500;cursor:default}
-  .twk-btn:hover{background:rgba(0,0,0,.88)}
+  .twk-btn:hover:not(:disabled){background:rgba(0,0,0,.88)}
   .twk-btn.secondary{background:rgba(0,0,0,.06);color:inherit}
-  .twk-btn.secondary:hover{background:rgba(0,0,0,.1)}
+  .twk-btn.secondary:hover:not(:disabled){background:rgba(0,0,0,.1)}
+  .twk-btn:disabled{opacity:.4;cursor:not-allowed}
 
   .twk-swatch{appearance:none;-webkit-appearance:none;width:56px;height:22px;
     border:.5px solid rgba(0,0,0,.1);border-radius:6px;padding:0;cursor:default;
@@ -603,10 +604,10 @@ function TweakColor({ label, value, options, onChange }) {
   );
 }
 
-function TweakButton({ label, onClick, secondary = false }) {
+function TweakButton({ label, onClick, secondary = false, disabled = false, title = '' }) {
   return (
     <button type="button" className={secondary ? 'twk-btn secondary' : 'twk-btn'}
-            onClick={onClick}>{label}</button>
+            onClick={onClick} disabled={disabled} title={title}>{label}</button>
   );
 }
 

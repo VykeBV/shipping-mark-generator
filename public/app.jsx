@@ -127,6 +127,39 @@ function availableIconsRegionMm(state) {
   };
 }
 
+// ─── Row-fit helpers ──────────────────────────────────────────────────
+// Mirror the .sm-row / .sm-rows CSS so JS can decide whether more rows
+// will fit. Each row is one line of 2.6 mm Roboto at line-height 1.25
+// (= 3.25 mm), and rows are stacked with 0.8 mm gaps. The "+ Add row"
+// button below the rows takes ~4 mm of additional height. Approximations
+// — if a row's value wraps to multiple lines, real height will exceed
+// our estimate, but the overflow warning will still catch it once it
+// actually clips.
+const ROW_LINE_H_MM = 2.6 * 1.25;     // 3.25 mm per row
+const ROW_GAP_MM    = 0.8;            // .sm-rows gap
+const ADD_BTN_H_MM  = 4.0;            // .sm-row-add approximate height
+
+function rowsBlockHeightMm(rowCount) {
+  if (rowCount <= 0) return ADD_BTN_H_MM;
+  return rowCount * ROW_LINE_H_MM
+       + (rowCount - 1) * ROW_GAP_MM
+       + ADD_BTN_H_MM
+       + 1.5;                          // small breathing room
+}
+
+// True when the current N rows + the "+ Add row" button would exceed
+// the body's available height (= the same region icons share).
+function rowsOverflow(rowCount, state) {
+  const availH = availableIconsRegionMm(state).availH;
+  return rowsBlockHeightMm(rowCount) > availH + 0.01;
+}
+
+// True when adding one MORE row would NOT overflow.
+function canAddRow(state) {
+  const current = (state.rows || []).length;
+  return !rowsOverflow(current + 1, state);
+}
+
 // True when the user's chosen icon size would overflow the available
 // region. Drives the red warning in the Tweaks panel.
 function iconsOverflow(enabledKeys, state) {
@@ -376,7 +409,13 @@ function App() {
     rows[idx] = next;
     setTweak("rows", rows);
   };
-  const addRow = () => setTweak("rows", [...(t.rows || []), { label: "Label", value: "" }]);
+  const addRow = () => {
+    // Refuse to add when the next row wouldn't fit. The button is
+    // already disabled in the UI, but this guard catches keyboard /
+    // programmatic invocations too.
+    if (!canAddRow(t)) return;
+    setTweak("rows", [...(t.rows || []), { label: "Label", value: "" }]);
+  };
   const removeRow = (idx) => {
     if ((t.rows || []).length <= 1) return;
     setTweak("rows", t.rows.filter((_, i) => i !== idx));
@@ -1333,6 +1372,13 @@ function App() {
     ? Math.max(3, Math.floor(iconFitMaxMm(enabledIcons.length, iconsRegion) * 2) / 2)
     : null;
 
+  // Row-fit flags: do current rows still fit? Can we add one more?
+  // Drives the disabled state of both "+ Add row" buttons and the
+  // canvas-level overflow warning.
+  const rowCount = (t.rows || []).length;
+  const rowsDontFit = rowsOverflow(rowCount, t);
+  const rowAddBlocked = !canAddRow(t);
+
   // ── Icon upload (custom SVG → adds to library + auto-enables) ─────
   const iconInputRef = useRef(null);
   const onPickIcon = (e) => {
@@ -1392,19 +1438,39 @@ function App() {
           the canvas (not in the Tweaks panel) so the feedback is
           adjacent to the actual problem. Includes a one-click "Fit"
           button that snaps the slider to the largest size that fits. */}
-      {iconsDontFit && (
-        <div className="vyke-canvas-warning" role="alert" aria-live="polite">
-          <span>
-            <b>Icons don't fit at {t.iconSizeMm || 14}&nbsp;mm.</b>
-            {" "}They'll be clipped in the preview and PDF.
-          </span>
-          {suggestedIconMm > 0 && (
-            <button
-              type="button"
-              onClick={() => setTweak("iconSizeMm", suggestedIconMm)}
-            >
-              Fit to {suggestedIconMm}&nbsp;mm
-            </button>
+      {(iconsDontFit || rowsDontFit) && (
+        <div className="vyke-canvas-warnings">
+          {rowsDontFit && (
+            <div className="vyke-canvas-warning" role="alert" aria-live="polite">
+              <span>
+                <b>{rowCount} rows don't fit.</b>
+                {" "}Make the card taller, or remove a row.
+              </span>
+              <button
+                type="button"
+                onClick={() => removeRow(rowCount - 1)}
+                disabled={rowCount <= 1}
+                title={rowCount <= 1 ? "Can't remove the last row" : ""}
+              >
+                Remove last row
+              </button>
+            </div>
+          )}
+          {iconsDontFit && (
+            <div className="vyke-canvas-warning" role="alert" aria-live="polite">
+              <span>
+                <b>Icons don't fit at {t.iconSizeMm || 14}&nbsp;mm.</b>
+                {" "}They'll be clipped in the preview and PDF.
+              </span>
+              {suggestedIconMm > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setTweak("iconSizeMm", suggestedIconMm)}
+                >
+                  Fit to {suggestedIconMm}&nbsp;mm
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -1487,7 +1553,14 @@ function App() {
                     <button className="sm-row-remove" onClick={() => removeRow(i)} title="Remove row">×</button>
                   </div>
                 ))}
-                <button className="sm-row-add" onClick={addRow}>+ Add row</button>
+                <button
+                  className="sm-row-add"
+                  onClick={addRow}
+                  disabled={rowAddBlocked}
+                  title={rowAddBlocked
+                    ? "No more room — make the card taller or remove a row first."
+                    : "Add a row"}
+                >+ Add row</button>
               </div>
 
               {enabledIcons.length > 0 && (
@@ -1573,7 +1646,15 @@ function App() {
           Click any <b>label</b> or <b>value</b> on the preview to edit it inline,
           or use the buttons below.
         </div>
-        <TweakButton label="+ Add row" onClick={addRow} secondary />
+        <TweakButton
+          label="+ Add row"
+          onClick={addRow}
+          secondary
+          disabled={rowAddBlocked}
+          title={rowAddBlocked
+            ? "No more room on the card. Make it taller or remove a row first."
+            : ""}
+        />
         {(t.rows || []).length > 1 && (
           <TweakButton
             label={`− Remove last row (${(t.rows || [])[(t.rows || []).length - 1]?.label || "Row"})`}

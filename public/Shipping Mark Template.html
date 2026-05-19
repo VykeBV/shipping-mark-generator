@@ -775,12 +775,11 @@
      the welcome card already shows the same message internally. */
   body.vyke-locked .vyke-dev-banner { display: none; }
 
-  /* Canvas-level overflow warning. Same positioning model as the dev
-     banner (fixed, anchored clear of the Tweaks panel) but pinned to
-     the BOTTOM of the viewport so it doesn't compete with the dev
-     pill at the top. Red instead of yellow because it's blocking-
-     style feedback (icons WILL be clipped) not a heads-up. */
-  .vyke-canvas-warning {
+  /* Container that stacks one or more canvas-level overflow warnings
+     vertically, pinned to the bottom of the viewport clear of the
+     Tweaks panel. Each warning inside is a flex row with text + an
+     action button. */
+  .vyke-canvas-warnings {
     position: fixed;
     bottom: 14px;
     left: 14px;
@@ -790,6 +789,25 @@
     width: fit-content;
     max-width: 100%;
     z-index: 15;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
+  body.vyke-locked .vyke-canvas-warnings { display: none; }
+  @media (max-width: 768px) {
+    .vyke-canvas-warnings {
+      bottom: 14px;
+      right: 14px;
+    }
+  }
+
+  /* Individual warning card. Red because it indicates content will be
+     clipped (blocking-style feedback), distinct from the yellow dev
+     banner (advisory). */
+  .vyke-canvas-warning {
+    width: fit-content;
+    max-width: 100%;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -823,11 +841,13 @@
     background: rgba(255, 90, 90, 0.36);
     border-color: rgba(255, 90, 90, 0.80);
   }
-  body.vyke-locked .vyke-canvas-warning { display: none; }
+  .vyke-canvas-warning button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(255, 90, 90, 0.10);
+  }
   @media (max-width: 768px) {
     .vyke-canvas-warning {
-      bottom: 14px;
-      right: 14px;
       font-size: 10.5px;
       padding: 8px 12px;
     }
@@ -1205,7 +1225,12 @@
     margin-top: 2px;
     transition: color .15s ease, border-color .15s ease, background .15s ease;
   }
-  .sm-row-add:hover { color: #111; border-color: rgba(0,0,0,.55); background: rgba(0,0,0,.03); }
+  .sm-row-add:hover:not(:disabled) { color: #111; border-color: rgba(0,0,0,.55); background: rgba(0,0,0,.03); }
+  .sm-row-add:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    border-style: dashed;
+  }
 
   /* Handling icons — flex wrap so each icon can have its own mm size.
      Per-icon width/height come from inline styles set in JSX, and an
@@ -1336,18 +1361,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=10"></script>
-<script type="text/babel" src="auth.jsx?v=10"></script>
-<script type="text/babel" src="presets.jsx?v=10"></script>
-<script type="text/babel" src="activity.jsx?v=10"></script>
+<script type="text/babel" src="config.jsx?v=11"></script>
+<script type="text/babel" src="auth.jsx?v=11"></script>
+<script type="text/babel" src="presets.jsx?v=11"></script>
+<script type="text/babel" src="activity.jsx?v=11"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=10"></script>
-<script type="text/babel" src="icons.jsx?v=10"></script>
-<script type="text/babel" src="barcode.jsx?v=10"></script>
-<script type="text/babel" src="welcome.jsx?v=10"></script>
-<script type="text/babel" src="account-chip.jsx?v=10"></script>
-<script type="text/babel" src="presets-panel.jsx?v=10"></script>
-<script type="text/babel" src="app.jsx?v=10"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=11"></script>
+<script type="text/babel" src="icons.jsx?v=11"></script>
+<script type="text/babel" src="barcode.jsx?v=11"></script>
+<script type="text/babel" src="welcome.jsx?v=11"></script>
+<script type="text/babel" src="account-chip.jsx?v=11"></script>
+<script type="text/babel" src="presets-panel.jsx?v=11"></script>
+<script type="text/babel" src="app.jsx?v=11"></script>
 
 <style>
   #__standalone-tweaks-btn {
