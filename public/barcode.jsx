@@ -229,10 +229,16 @@
             includeText = true } = opts;
     const norm = normalizeEan13(digits);
     if (!norm.ok) throw new Error(norm.error);
-    if (!window.svg2pdf) {
+    // svg2pdf.js's UMD bundle exposes a namespace OBJECT at
+    // window.svg2pdf (not a callable function). The actual function is
+    // window.svg2pdf.svg2pdf, but svg2pdf also patches the jsPDF
+    // prototype with a `.svg(el, opts)` method — we use that since it's
+    // the documented preferred API and reads more naturally here.
+    if (!window.svg2pdf || typeof pdf.svg !== "function") {
       throw new Error(
-        "svg2pdf.js failed to load. Check the script tag in Shipping Mark Template.html — " +
-        "vector PDF rendering requires it.",
+        "svg2pdf.js failed to load (window.svg2pdf or pdf.svg missing). " +
+        "Check the script tag in Shipping Mark Template.html — vector " +
+        "PDF rendering requires it.",
       );
     }
 
@@ -252,10 +258,10 @@
     const physWmm = widthMatch  ? parseFloat(widthMatch[1])  : TOTAL_MODULES * xDimMm;
     const physHmm = heightMatch ? parseFloat(heightMatch[1]) : heightMm;
 
-    // svg2pdf returns a Promise that resolves once the SVG is fully
+    // pdf.svg() returns a Promise that resolves once the SVG is fully
     // embedded as PDF vector commands. The viewBox is scaled into the
     // (width, height) rect we pass.
-    await window.svg2pdf(svgEl, pdf, {
+    await pdf.svg(svgEl, {
       x: x,
       y: y,
       width:  physWmm,

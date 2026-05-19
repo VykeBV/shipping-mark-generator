@@ -1166,7 +1166,12 @@
   }
   .sm-barcode svg {
     display: block;
-    height: auto;
+    /* No CSS height override — the SVG carries explicit width="…mm" and
+       height="…mm" attributes from barcode.jsx, sized so the data bars
+       come out at exactly the user's chosen bar height. Forcing
+       `height: auto` here makes the browser derive height from the
+       viewBox aspect instead, which collapses the container vertically
+       and re-introduces the digit/bar overlap. */
   }
 
   /* ─── Editable text ───────────────────────────────────────────── */
