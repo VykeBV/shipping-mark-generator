@@ -97,6 +97,19 @@
   // Without this compensation the digits come out ~30 % undersized.
   const CAP_HEIGHT_TO_FONT_SIZE = 1 / 0.7;
 
+  // SVG <text y="…"> positions the typographic BASELINE, not the
+  // visible bottom of the glyph. Most fonts reserve descent space
+  // below baseline for descenders (g/p/q/y) AND for round-bottomed
+  // digits (0/3/5/6/8/9) which dip a few percent below. Courier in
+  // particular allocates ~20 % of the em to descent, OCR-B ~15-20 %.
+  // If the SVG viewBox bottom sits AT the baseline, anything the
+  // browser draws below it gets clipped — which is exactly the
+  // chopped-off-digit-bottoms artefact we saw before this constant
+  // existed. 25 % covers every common monospace fallback comfortably
+  // without making the barcode visibly taller (it's ~2.3 × X-dim,
+  // i.e. <1 mm for the default 0.33 mm X-dim).
+  const DESCENT_RATIO_OF_FONT_SIZE = 0.25;
+
   // OCR-B is the ISO-defined font for EAN-13 HRI; few browsers ship
   // it, so we declare it first and fall back through Courier (jsPDF
   // built-in monospace, used by svg2pdf for the PDF render) to generic
@@ -108,6 +121,38 @@
   // Total physical width including both quiet zones.
   function widthMm({ xDimMm }) {
     return TOTAL_MODULES * xDimMm;
+  }
+
+  // ── Layout math (shared by buildSvg + drawToPdf) ──────────────────
+  // One source of truth for every mm dimension. Both preview and PDF
+  // call this so they can never drift apart (used to compute
+  // physHmm twice with slightly different formulas — bug magnet).
+  //
+  // Vertical layout in mm, measured down from y=0 at bar tops:
+  //   0                  top of all bars
+  //   heightMm           bottom of data bars
+  //   guardBottomMm      bottom of guard bars (= heightMm + 5X)
+  //   baselineMm         text baseline      (= heightMm + 1X + 8X = heightMm + 9X)
+  //   physHmm            SVG bottom         (= baselineMm + glyph descent buffer)
+  function layoutMm({ heightMm, xDimMm, includeText }) {
+    const physWmm       = TOTAL_MODULES * xDimMm;
+    const guardExtMm    = includeText ? GUARD_EXTENSION_MODULES * xDimMm : 0;
+    const textGapMm     = includeText ? TEXT_GAP_MODULES        * xDimMm : 0;
+    const capHeightMm   = includeText ? TEXT_CAP_HEIGHT_MODULES * xDimMm : 0;
+    const guardBottomMm = heightMm + guardExtMm;
+    const baselineMm    = heightMm + textGapMm + capHeightMm;
+    const fontSizeMm    = capHeightMm * CAP_HEIGHT_TO_FONT_SIZE;
+    // Reserve ~25 % of font-size below baseline so the SVG viewBox
+    // doesn't crop the bottoms of round-bottomed digits (see comment
+    // on DESCENT_RATIO_OF_FONT_SIZE above).
+    const descentMm     = includeText ? fontSizeMm * DESCENT_RATIO_OF_FONT_SIZE : 0;
+    const textInkBottomMm = baselineMm + descentMm;
+    const physHmm = Math.max(guardBottomMm, textInkBottomMm);
+    return {
+      physWmm, physHmm,
+      guardBottomMm, baselineMm,
+      capHeightMm, fontSizeMm,
+    };
   }
 
   // ── Extract bar pattern from a bwip-js "no-text" SVG ──────────────
@@ -171,17 +216,9 @@
   //   y = physHmm        SVG bottom = max(guard bottom, text bottom)
   function buildSvg(digits, heightMm, xDimMm, includeText) {
     const bars = getBars(digits, heightMm);
-
-    const physWmm = TOTAL_MODULES * xDimMm;
-    const guardExtMm    = includeText ? GUARD_EXTENSION_MODULES * xDimMm : 0;
-    const textGapMm     = includeText ? TEXT_GAP_MODULES        * xDimMm : 0;
-    const capHeightMm   = includeText ? TEXT_CAP_HEIGHT_MODULES * xDimMm : 0;
-    const guardBottomMm = heightMm + guardExtMm;
-    // Text occupies (gap + cap-height) physical mm below data bars;
-    // baseline sits at the BOTTOM of the cap area (digits have no
-    // descenders, so baseline ≈ bottom of visible glyph).
-    const textBottomMm  = heightMm + textGapMm + capHeightMm;
-    const physHmm = Math.max(guardBottomMm, textBottomMm);
+    const L = layoutMm({ heightMm, xDimMm, includeText });
+    const { physWmm, physHmm, guardBottomMm, baselineMm,
+            capHeightMm, fontSizeMm } = L;
 
     // Render each bar as a <rect>. bwip-js bars are at cx=0..95 (module
     // units, no QZ); we shift them right by LEFT_QZ_MODULES so they sit
@@ -218,12 +255,10 @@
     // guard extensions.
     let textEls = "";
     if (includeText) {
-      // Baseline sits at the bottom of the cap area (= textBottomMm).
-      // Font-size is scaled up so the RENDERED cap height equals the
-      // intended capHeightMm (= 8 modules). Without this scaling the
-      // digits would render at ~70 % of the intended height.
-      const baselineMm = textBottomMm;
-      const fontSizeMm = capHeightMm * CAP_HEIGHT_TO_FONT_SIZE;
+      // baselineMm + fontSizeMm come from layoutMm() — single source
+      // of truth, shared with drawToPdf and reflected in the SVG's
+      // physHmm (which now includes glyph descent below baseline so
+      // digit bottoms don't get clipped).
       // Tiny extra tracking between digits keeps each character
       // visually aligned with its bar group.
       const letterSpacingMm = xDimMm * 0.25;
@@ -284,14 +319,12 @@
       .parseFromString(svgString, "image/svg+xml")
       .documentElement;
 
-    // Physical dimensions in pure mm — derived with the same formula
-    // as buildSvg so preview and PDF use exactly the same container.
-    // physHmm is max(guard bottom, text bottom); the text typically
-    // hangs a few modules below the guard bars in the canonical look.
-    const physWmm = TOTAL_MODULES * xDimMm;
-    const guardBottomMm = heightMm + (includeText ? GUARD_EXTENSION_MODULES * xDimMm : 0);
-    const textBottomMm  = heightMm + (includeText ? (TEXT_GAP_MODULES + TEXT_CAP_HEIGHT_MODULES) * xDimMm : 0);
-    const physHmm = Math.max(guardBottomMm, textBottomMm);
+    // Physical container dimensions for svg2pdf — pulled from the same
+    // layoutMm() helper buildSvg uses, so preview and PDF can never
+    // drift apart. physHmm now includes the glyph-descent buffer
+    // (DESCENT_RATIO_OF_FONT_SIZE) so the PDF doesn't crop digit
+    // bottoms the same way the SVG preview used to.
+    const { physWmm, physHmm } = layoutMm({ heightMm, xDimMm, includeText });
 
     await pdf.svg(svgEl, { x, y, width: physWmm, height: physHmm });
   }
