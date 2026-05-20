@@ -1257,9 +1257,12 @@
        way to scroll up to it. */
     place-items: safe center;
     overflow-y: auto;
-    /* Reduced from 24 px so on shorter viewports the card has a
-       little more room — still leaves a comfortable 16 px gutter. */
-    padding: 16px;
+    /* Top padding clears the 56 px fixed .vyke-header (which sits at
+       z-index 2147483647, above this backdrop). Without it the top
+       of the welcome card slides behind the header and becomes
+       unreachable even with overflow-y: auto. 16 px on the other
+       three sides leaves a comfortable gutter. */
+    padding: 72px 16px 16px;
     background: rgba(8, 9, 12, 0.65);
     -webkit-backdrop-filter: blur(8px) saturate(120%);
     backdrop-filter: blur(8px) saturate(120%);
@@ -1277,7 +1280,12 @@
   }
   @keyframes vykeFadeIn { from { opacity: 0 } to { opacity: 1 } }
   .vyke-welcome-card {
-    width: min(420px, 100%);
+    /* On wide viewports the card is a two-column layout — wider to
+       accommodate both panes side-by-side. On narrow viewports it
+       collapses to a single column (the .vyke-welcome-left / -right
+       children just stack via flex-wrap below) and the width caps
+       at 100 % of the backdrop's content box. */
+    width: min(820px, 100%);
     background: rgba(18, 19, 23, 0.96);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 16px;
@@ -1288,21 +1296,51 @@
     overflow: hidden;
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
+    display: flex;
+    flex-wrap: wrap;
   }
-  .vyke-welcome-hd {
-    padding: 28px 28px 20px;
-    text-align: center;
+  /* Two equal-ish flex children — LEFT carries the marketing /
+     context (logo, title, intro, pitch, dev notice); RIGHT carries
+     the action (form fields, continue, fineprint, footer credit).
+     basis 360 px + flex-grow 1 means: stack vertically when the
+     card is narrower than ~760 px (each pane wraps to full width),
+     side-by-side above that.  */
+  .vyke-welcome-left,
+  .vyke-welcome-right {
+    flex: 1 1 360px;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .vyke-welcome-left {
+    padding: 28px 28px 26px;
     background:
       linear-gradient(180deg, rgba(157, 201, 232, 0.10), transparent 70%);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .vyke-welcome-right {
+    padding: 28px 28px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  /* When the two panes stack (single-column / narrow viewport), the
+     divider on the LEFT pane reads better as a bottom border. */
+  @media (max-width: 759px) {
+    .vyke-welcome-left {
+      border-right: 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
   }
   .vyke-welcome-logo {
     width: 140px;
     height: 36px;
-    margin: 0 auto 14px;
+    margin: 0 0 6px;
     background-image: url("vyke-create-logo.png");
     background-size: contain;
-    background-position: center;
+    background-position: left center;
     background-repeat: no-repeat;
     filter: drop-shadow(0 1px 14px rgba(157, 201, 232, 0.22));
   }
@@ -1344,23 +1382,17 @@
     font-size: 12.5px;
     line-height: 1.55;
   }
-  .vyke-welcome-body {
-    padding: 22px 28px 26px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-  /* Tighten paddings and inter-element gaps when the viewport itself
-     is short (e.g. landscape phones, half-screen browser windows on
-     laptops). Combined with the backdrop's overflow-y: auto, this
-     keeps the welcome card readable without forcing a scroll on
-     borderline viewport heights. */
+  /* Tighten paddings, gaps and typography when the viewport itself
+     is short (landscape phones, half-screen browser windows on
+     laptops). Combined with the backdrop's overflow-y: auto and the
+     two-column desktop layout, this keeps the welcome card fully
+     visible without scrolling on most "short but not tiny" viewports. */
   @media (max-height: 760px) {
-    .vyke-welcome-hd { padding: 18px 24px 14px; }
-    .vyke-welcome-logo { width: 110px; height: 28px; margin-bottom: 10px; }
+    .vyke-welcome-left,
+    .vyke-welcome-right { padding: 18px 22px 20px; gap: 11px; }
+    .vyke-welcome-logo { width: 110px; height: 28px; margin-bottom: 4px; }
     .vyke-welcome-title { font-size: 19px; margin: 2px 0 6px; }
     .vyke-welcome-intro { font-size: 12px; line-height: 1.5; }
-    .vyke-welcome-body { padding: 16px 24px 20px; gap: 11px; }
     .vyke-welcome-pitch { padding: 10px 12px 11px; }
     .vyke-welcome-pitch-body { font-size: 11px; line-height: 1.5; }
     .vyke-dev-notice { padding: 8px 11px; font-size: 11px; }
@@ -2167,19 +2199,19 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=46"></script>
-<script type="text/babel" src="auth.jsx?v=46"></script>
-<script type="text/babel" src="presets.jsx?v=46"></script>
-<script type="text/babel" src="activity.jsx?v=46"></script>
-<script type="text/babel" src="feedback.jsx?v=46"></script>
+<script type="text/babel" src="config.jsx?v=47"></script>
+<script type="text/babel" src="auth.jsx?v=47"></script>
+<script type="text/babel" src="presets.jsx?v=47"></script>
+<script type="text/babel" src="activity.jsx?v=47"></script>
+<script type="text/babel" src="feedback.jsx?v=47"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=46"></script>
-<script type="text/babel" src="icons.jsx?v=46"></script>
-<script type="text/babel" src="barcode.jsx?v=46"></script>
-<script type="text/babel" src="welcome.jsx?v=46"></script>
-<script type="text/babel" src="account-chip.jsx?v=46"></script>
-<script type="text/babel" src="presets-panel.jsx?v=46"></script>
-<script type="text/babel" src="app.jsx?v=46"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=47"></script>
+<script type="text/babel" src="icons.jsx?v=47"></script>
+<script type="text/babel" src="barcode.jsx?v=47"></script>
+<script type="text/babel" src="welcome.jsx?v=47"></script>
+<script type="text/babel" src="account-chip.jsx?v=47"></script>
+<script type="text/babel" src="presets-panel.jsx?v=47"></script>
+<script type="text/babel" src="app.jsx?v=47"></script>
 
 <style>
   #__standalone-tweaks-btn {

@@ -49,8 +49,16 @@
 
     return (
       <div className="vyke-welcome-backdrop">
+        {/* Two-column card on desktop (>=760 px viewport width):
+            LEFT  — branding context (logo, title, intro, "For your
+                    company" pitch, dev notice)
+            RIGHT — the action (email/name fields, continue, fineprint,
+                    footer credit)
+            Stacks vertically on narrow viewports — same content order.
+            This makes the card shorter on desktop so it fits inside
+            the available viewport height without scrolling. */}
         <form className="vyke-welcome-card" onSubmit={submit}>
-          <div className="vyke-welcome-hd">
+          <div className="vyke-welcome-left">
             <div className="vyke-welcome-logo" aria-hidden="true" />
             <div className="vyke-welcome-eyebrow">
               Vyke Create · Shipping Marks
@@ -61,12 +69,40 @@
               This is a <b>free public demo</b> of what Vyke can build — a
               showcase, not a production tool. Generate print-ready shipping
               mark PDFs with vector-precise EAN-13 barcodes and official ISO
-              7000 handling icons, and save your designs as presets so you can
-              pick them up next time.
+              7000 handling icons, and save your designs as presets so you
+              can pick them up next time.
             </p>
+
+            <div className="vyke-welcome-pitch">
+              <div className="vyke-welcome-pitch-eyebrow">For your company</div>
+              <div className="vyke-welcome-pitch-title">
+                Want this in your own branding?
+              </div>
+              <p className="vyke-welcome-pitch-body">
+                We can build this for almost <b>any design</b> — product
+                cards, flyers, packaging, labels, brochures, you name it —
+                in your house style, and even <b>automate the whole flow</b>,
+                generating finished artwork straight from your product
+                catalogue or ERP so your team never opens a PDF editor again.
+              </p>
+              <a
+                className="vyke-welcome-pitch-cta"
+                href="mailto:tim@vyke.design?subject=Custom%20Vyke%20Create%20build"
+              >
+                Email tim@vyke.design →
+              </a>
+            </div>
+
+            <div className="vyke-dev-notice">
+              <span className="vyke-dev-notice-icon" aria-hidden="true">🚧</span>
+              <b>Heads up — this demo is still in active development.</b>
+              {" "}You may be using it while we're shipping changes, so
+              some features might not behave cleanly yet. If something
+              breaks, please let us know.
+            </div>
           </div>
 
-          <div className="vyke-welcome-body">
+          <div className="vyke-welcome-right">
             <label className="vyke-welcome-lbl">
               Email
               <input
@@ -104,34 +140,6 @@
             >
               {busy ? "One moment…" : "Continue →"}
             </button>
-
-            <div className="vyke-welcome-pitch">
-              <div className="vyke-welcome-pitch-eyebrow">For your company</div>
-              <div className="vyke-welcome-pitch-title">
-                Want this in your own branding?
-              </div>
-              <p className="vyke-welcome-pitch-body">
-                We can build this for almost <b>any design</b> — product
-                cards, flyers, packaging, labels, brochures, you name it —
-                in your house style, and even <b>automate the whole flow</b>,
-                generating finished artwork straight from your product
-                catalogue or ERP so your team never opens a PDF editor again.
-              </p>
-              <a
-                className="vyke-welcome-pitch-cta"
-                href="mailto:tim@vyke.design?subject=Custom%20Vyke%20Create%20build"
-              >
-                Email tim@vyke.design →
-              </a>
-            </div>
-
-            <div className="vyke-dev-notice">
-              <span className="vyke-dev-notice-icon" aria-hidden="true">🚧</span>
-              <b>Heads up — this demo is still in active development.</b>
-              {" "}You may be using it while we're shipping changes, so
-              some features might not behave cleanly yet. If something
-              breaks, please let us know.
-            </div>
 
             <div className="vyke-welcome-fineprint">
               No password. We use your email to remember your presets and
