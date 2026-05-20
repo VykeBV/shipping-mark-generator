@@ -79,11 +79,10 @@
                 Want this in your own branding?
               </div>
               <p className="vyke-welcome-pitch-body">
-                We can build this for almost <b>any design</b> — product
-                cards, flyers, packaging, labels, brochures, you name it —
-                in your house style, and even <b>automate the whole flow</b>,
-                generating finished artwork straight from your product
-                catalogue or ERP so your team never opens a PDF editor again.
+                We can build this for <b>product cards, flyers, labels</b>,
+                you name it — in your house style, and even
+                <b> automate the whole flow</b> so your team never opens
+                a PDF editor again.
               </p>
               <a
                 className="vyke-welcome-pitch-cta"

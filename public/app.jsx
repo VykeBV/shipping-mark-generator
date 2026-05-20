@@ -2093,10 +2093,9 @@ function App() {
               <div className="twk-pitch-eyebrow">For your company</div>
               <div className="twk-pitch-title">Need it customised?</div>
               <p className="twk-pitch-body">
-                We can build this for almost <b>any design</b> — product
-                cards, flyers, packaging, labels, brochures, you name it
-                — in your branding, and even <b>automate the flow</b>
-                straight from your product data.
+                We can build this for <b>product cards, flyers, labels</b>,
+                you name it — in your branding, and even
+                <b> automate the flow</b>.
               </p>
               <a className="twk-pitch-cta" href="mailto:tim@vyke.design?subject=Custom%20Vyke%20Create%20build">
                 Email tim@vyke.design →
