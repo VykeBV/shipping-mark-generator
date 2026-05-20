@@ -2059,7 +2059,11 @@ function App() {
             <button
               type="button"
               className="twk-pro-trigger"
-              onClick={() => setAdvancedOpen(true)}
+              /* Toggle: clicking again while the panel is open closes
+                 it. Matches the affordance the aria-expanded state
+                 already implies and saves a round-trip via the
+                 panel's own × close button. */
+              onClick={() => setAdvancedOpen((v) => !v)}
               aria-expanded={advancedOpen ? "true" : "false"}
               aria-haspopup="dialog"
             >
