@@ -2227,19 +2227,19 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=51"></script>
-<script type="text/babel" src="auth.jsx?v=51"></script>
-<script type="text/babel" src="presets.jsx?v=51"></script>
-<script type="text/babel" src="activity.jsx?v=51"></script>
-<script type="text/babel" src="feedback.jsx?v=51"></script>
+<script type="text/babel" src="config.jsx?v=52"></script>
+<script type="text/babel" src="auth.jsx?v=52"></script>
+<script type="text/babel" src="presets.jsx?v=52"></script>
+<script type="text/babel" src="activity.jsx?v=52"></script>
+<script type="text/babel" src="feedback.jsx?v=52"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=51"></script>
-<script type="text/babel" src="icons.jsx?v=51"></script>
-<script type="text/babel" src="barcode.jsx?v=51"></script>
-<script type="text/babel" src="welcome.jsx?v=51"></script>
-<script type="text/babel" src="account-chip.jsx?v=51"></script>
-<script type="text/babel" src="presets-panel.jsx?v=51"></script>
-<script type="text/babel" src="app.jsx?v=51"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=52"></script>
+<script type="text/babel" src="icons.jsx?v=52"></script>
+<script type="text/babel" src="barcode.jsx?v=52"></script>
+<script type="text/babel" src="welcome.jsx?v=52"></script>
+<script type="text/babel" src="account-chip.jsx?v=52"></script>
+<script type="text/babel" src="presets-panel.jsx?v=52"></script>
+<script type="text/babel" src="app.jsx?v=52"></script>
 
 <style>
   #__standalone-tweaks-btn {
@@ -2617,7 +2617,37 @@
 
     var seen = false;
     try { seen = localStorage.getItem(SEEN_KEY) === "1"; } catch (e) {}
-    if (!seen) setTimeout(function () { setOpen(true); }, 900);
+    if (!seen) {
+      // Auto-open the Quick Start card 900 ms after the editor becomes
+      // usable. "Usable" means body.vyke-locked is OFF — that class is
+      // set by App while the welcome modal is up. Without this gate
+      // the help card was showing on top of the sign-in form (its
+      // z-index 2147483645 is well above the backdrop's 100), which
+      // confused first-time visitors.
+      //
+      // We can't check .vyke-locked synchronously at script load —
+      // this IIFE runs at end of <body>, BEFORE React mounts and
+      // applies the initial body class. So we use the same 900 ms
+      // delay as before and check at the moment of opening: by then
+      // React's auth effect has long since run and set the class
+      // correctly. If still locked, hand off to a MutationObserver
+      // that waits for the welcome modal to close.
+      setTimeout(function () {
+        if (!document.body.classList.contains("vyke-locked")) {
+          setOpen(true);
+          return;
+        }
+        var mo = new MutationObserver(function () {
+          if (!document.body.classList.contains("vyke-locked")) {
+            mo.disconnect();
+            // Small extra delay so the welcome backdrop has time to
+            // fade out before the help card animates in.
+            setTimeout(function () { setOpen(true); }, 600);
+          }
+        });
+        mo.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+      }, 900);
+    }
   })();
 </script>
 </body>
