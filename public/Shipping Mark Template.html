@@ -1248,14 +1248,32 @@
     inset: 0;
     z-index: 100;
     display: grid;
-    place-items: center;
-    padding: 24px;
+    /* `safe center` keeps the card centred when it fits the viewport
+       but falls back to top-anchored when it doesn't, so the top of
+       the card is always reachable. Combined with `overflow-y: auto`
+       on the backdrop, that means: card too tall → user scrolls the
+       backdrop and can read the whole thing. Without `safe`, plain
+       `center` would push the top half above the viewport with no
+       way to scroll up to it. */
+    place-items: safe center;
+    overflow-y: auto;
+    /* Reduced from 24 px so on shorter viewports the card has a
+       little more room — still leaves a comfortable 16 px gutter. */
+    padding: 16px;
     background: rgba(8, 9, 12, 0.65);
     -webkit-backdrop-filter: blur(8px) saturate(120%);
     backdrop-filter: blur(8px) saturate(120%);
     font: 13px/1.5 "Inter", "Roboto", system-ui, -apple-system, sans-serif;
     color: rgba(255, 255, 255, 0.92);
     animation: vykeFadeIn .22s ease;
+    /* Custom scrollbar matching the rest of the dark chrome. */
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+    scrollbar-width: thin;
+  }
+  .vyke-welcome-backdrop::-webkit-scrollbar { width: 8px; }
+  .vyke-welcome-backdrop::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 4px;
   }
   @keyframes vykeFadeIn { from { opacity: 0 } to { opacity: 1 } }
   .vyke-welcome-card {
@@ -1331,6 +1349,21 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
+  }
+  /* Tighten paddings and inter-element gaps when the viewport itself
+     is short (e.g. landscape phones, half-screen browser windows on
+     laptops). Combined with the backdrop's overflow-y: auto, this
+     keeps the welcome card readable without forcing a scroll on
+     borderline viewport heights. */
+  @media (max-height: 760px) {
+    .vyke-welcome-hd { padding: 18px 24px 14px; }
+    .vyke-welcome-logo { width: 110px; height: 28px; margin-bottom: 10px; }
+    .vyke-welcome-title { font-size: 19px; margin: 2px 0 6px; }
+    .vyke-welcome-intro { font-size: 12px; line-height: 1.5; }
+    .vyke-welcome-body { padding: 16px 24px 20px; gap: 11px; }
+    .vyke-welcome-pitch { padding: 10px 12px 11px; }
+    .vyke-welcome-pitch-body { font-size: 11px; line-height: 1.5; }
+    .vyke-dev-notice { padding: 8px 11px; font-size: 11px; }
   }
   .vyke-welcome-lbl {
     display: flex;
@@ -2134,19 +2167,19 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=45"></script>
-<script type="text/babel" src="auth.jsx?v=45"></script>
-<script type="text/babel" src="presets.jsx?v=45"></script>
-<script type="text/babel" src="activity.jsx?v=45"></script>
-<script type="text/babel" src="feedback.jsx?v=45"></script>
+<script type="text/babel" src="config.jsx?v=46"></script>
+<script type="text/babel" src="auth.jsx?v=46"></script>
+<script type="text/babel" src="presets.jsx?v=46"></script>
+<script type="text/babel" src="activity.jsx?v=46"></script>
+<script type="text/babel" src="feedback.jsx?v=46"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=45"></script>
-<script type="text/babel" src="icons.jsx?v=45"></script>
-<script type="text/babel" src="barcode.jsx?v=45"></script>
-<script type="text/babel" src="welcome.jsx?v=45"></script>
-<script type="text/babel" src="account-chip.jsx?v=45"></script>
-<script type="text/babel" src="presets-panel.jsx?v=45"></script>
-<script type="text/babel" src="app.jsx?v=45"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=46"></script>
+<script type="text/babel" src="icons.jsx?v=46"></script>
+<script type="text/babel" src="barcode.jsx?v=46"></script>
+<script type="text/babel" src="welcome.jsx?v=46"></script>
+<script type="text/babel" src="account-chip.jsx?v=46"></script>
+<script type="text/babel" src="presets-panel.jsx?v=46"></script>
+<script type="text/babel" src="app.jsx?v=46"></script>
 
 <style>
   #__standalone-tweaks-btn {
