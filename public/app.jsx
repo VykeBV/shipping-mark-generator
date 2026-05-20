@@ -525,7 +525,8 @@ function App() {
   // Advanced settings side-panel — opens to the left of the main Tweaks panel.
   // Houses expert-only controls (per-icon sizes, force-logo-black, barcode bar
   // height + X-dimension) so the main panel stays focused on everyday inputs.
-  const [advancedOpen, setAdvancedOpen] = useState(false);
+  // (Advanced settings are now an inline collapsible section in the
+  // sidebar — no separate side-panel state needed.)
 
   // ── Account / welcome-gate ──────────────────────────────────────────
   // The Welcome overlay locks the editor until the visitor has entered an
@@ -1993,9 +1994,46 @@ function App() {
 
         <TweakSection label="Content rows" />
         <div className="twk-tip" style={{ marginTop: 2 }}>
-          {(t.rows || []).length} row{(t.rows || []).length === 1 ? "" : "s"}.
-          Click any <b>label</b> or <b>value</b> on the preview to edit it inline,
-          or use the buttons below.
+          Edit row label/value here, or click any text on the canvas
+          preview to edit it inline. The order here = the order on the
+          shipping mark.
+        </div>
+        {/* Inline rows table — each row is two text fields (label /
+            value) plus a delete button. Keeps the rows discoverable
+            and editable WITHOUT requiring the user to find the
+            corresponding text on the canvas. */}
+        <div className="vyke-rows-table">
+          <div className="vyke-rows-head">
+            <span>Label</span>
+            <span>Value</span>
+            <span aria-hidden="true" />
+          </div>
+          {(t.rows || []).map((row, i) => (
+            <div className="vyke-rows-row" key={i}>
+              <input
+                type="text"
+                className="twk-field"
+                value={row.label || ""}
+                placeholder="Label"
+                onChange={(e) => setRow(i, { ...row, label: e.target.value })}
+              />
+              <input
+                type="text"
+                className="twk-field"
+                value={row.value || ""}
+                placeholder="Value"
+                onChange={(e) => setRow(i, { ...row, value: e.target.value })}
+              />
+              <button
+                type="button"
+                className="vyke-rows-del"
+                onClick={() => removeRow(i)}
+                disabled={(t.rows || []).length <= 1}
+                title={(t.rows || []).length <= 1 ? "Can't remove the last row" : "Remove this row"}
+                aria-label="Remove row"
+              >×</button>
+            </div>
+          ))}
         </div>
         <TweakButton
           label="+ Add row"
@@ -2006,13 +2044,6 @@ function App() {
             ? "No more room on the card. Make it taller or remove a row first."
             : ""}
         />
-        {(t.rows || []).length > 1 && (
-          <TweakButton
-            label={`− Remove last row (${(t.rows || [])[(t.rows || []).length - 1]?.label || "Row"})`}
-            onClick={() => removeRow((t.rows || []).length - 1)}
-            secondary
-          />
-        )}
 
         {/* "My presets" moved to the global header bar's Presets menu
             (HeaderBar component above), so save/load lives in one place. */}
@@ -2061,27 +2092,8 @@ function App() {
           </div>
         )}
 
-        {/* Distinct "pro" affordance, deliberately not styled like the toggles
-            beside it — opens the Advanced side-panel where the expert settings
-            live (per-icon sizes, force-logo-black, barcode bar height + X-dim). */}
-        <button
-          type="button"
-          className="twk-pro-trigger"
-          onClick={() => setAdvancedOpen(true)}
-          aria-expanded={advancedOpen ? "true" : "false"}
-        >
-          <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
-            <path
-              fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
-              d="M8 5.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6z M13.5 8a5.6 5.6 0 0 0-.1-1.0l1.4-1.0-1.4-2.4-1.7.6a5.4 5.4 0 0 0-1.7-1.0L9.7.6h-3.3l-.3 1.7a5.4 5.4 0 0 0-1.7 1.0l-1.7-.6L1.2 5.0l1.4 1.0a5.6 5.6 0 0 0 0 2.0L1.2 9l1.4 2.4 1.7-.6a5.4 5.4 0 0 0 1.7 1.0l.3 1.7h3.3l.3-1.7a5.4 5.4 0 0 0 1.7-1.0l1.7.6L14.8 9l-1.4-1.0a5.6 5.6 0 0 0 .1-1.0z"
-            />
-          </svg>
-          <span className="twk-pro-label">Advanced settings</span>
-          <span className="twk-pro-chev" aria-hidden="true">›</span>
-        </button>
-
-        {/* Built-in icon toggles (compact list — sizing now lives in the
-            Advanced panel). */}
+        {/* Built-in icon toggles. Per-icon fine sizing lives in the
+            Advanced section further down. */}
         {ICON_ORDER.map((k) => {
           const meta = window.ICON_LIBRARY[k];
           return (
@@ -2131,6 +2143,118 @@ function App() {
           onChange={onPickIcon}
         />
 
+        {/* ─── Advanced ────────────────────────────────────────────
+            Expert settings — text size, B&W logo, barcode physical
+            dimensions, per-icon size overrides. Used to live in a
+            separate "pro" side-panel; now folded into the main
+            sidebar as its own collapsible section so it sits with
+            every other setting (logical placement). */}
+        <TweakSection label="Advanced" />
+        <div className="twk-sect" style={{ paddingTop: 0 }}>Row text size</div>
+        <TweakSlider
+          label="Text size"
+          value={t.rowTextSizeMm || 2.6}
+          min={1.5} max={6} step={0.1} unit="mm"
+          onChange={(v) => setTweak("rowTextSizeMm", v)}
+        />
+        <div className="twk-tip">
+          Default 2.6&nbsp;mm matches typical retail shipping marks. Larger
+          text takes more vertical space; the canvas warning will tell you
+          if rows no longer fit.
+        </div>
+
+        <div className="twk-sect">Logo</div>
+        {t.brandLogo ? (
+          <TweakToggle
+            label="Force logo to pure black"
+            value={t.brandLogoBw}
+            onChange={(v) => setTweak("brandLogoBw", v)}
+          />
+        ) : (
+          <div className="twk-tip" style={{ opacity: 0.65 }}>
+            Upload a logo in the Brand section to enable B&amp;W filtering.
+          </div>
+        )}
+
+        <div className="twk-sect">Barcode dimensions</div>
+        <TweakSlider
+          label="Bar height"
+          value={t.barcodeHeightMm}
+          min={8} max={40} step={0.5} unit="mm"
+          onChange={(v) => setTweak("barcodeHeightMm", v)}
+        />
+        <TweakSlider
+          label="X-dimension"
+          value={t.barcodeXDimMm}
+          min={0.264} max={0.660} step={0.01} unit="mm"
+          onChange={(v) => setTweak("barcodeXDimMm", v)}
+        />
+        <div className="twk-tip">
+          GS1 spec: 0.264 mm minimum, 0.330 mm default at 100&nbsp;%
+          magnification. Larger X-dim = wider barcode and better scan distance.
+        </div>
+
+        <div className="twk-sect">Per-icon sizes</div>
+        <div className="twk-tip">
+          Override individual icons. Empty = use the global size
+          ({(t.iconSizeMm || 14)}&nbsp;mm).
+        </div>
+        {enabledIcons.length === 0 && (
+          <div className="twk-tip" style={{ opacity: 0.65 }}>
+            No icons enabled yet — toggle some on in the Handling icons section.
+          </div>
+        )}
+        {enabledIcons.map((k) => {
+          const meta = getIconMeta(k, t.customIcons);
+          if (!meta) return null;
+          const override = t.iconSizesMm && t.iconSizesMm[k];
+          const isCustom = !window.ICON_LIBRARY[k];
+          return (
+            <div key={k} className="adv-icon-row">
+              <div className="adv-icon-thumb">
+                {meta.svg
+                  ? meta.svg
+                  : <span style={{ width: 22, height: 22, display: "grid", placeItems: "center" }}
+                          dangerouslySetInnerHTML={{ __html: meta.svgString || "" }} />}
+              </div>
+              <div className="adv-icon-meta">
+                <div className="adv-icon-label">{meta.label}</div>
+                <div className="adv-icon-iso">
+                  {isCustom
+                    ? "Custom upload"
+                    : <>{meta.iso} · ISO normal {meta.isoNormalMm}&nbsp;mm</>}
+                </div>
+              </div>
+              <input
+                type="text"
+                inputMode="decimal"
+                className="twk-field adv-icon-input"
+                placeholder={String(t.iconSizeMm || 14)}
+                value={override == null ? "" : String(override)}
+                onChange={(e) => {
+                  const s = e.target.value.trim();
+                  const next = { ...(t.iconSizesMm || {}) };
+                  if (s === "") {
+                    delete next[k];
+                  } else {
+                    const n = Number(s);
+                    if (Number.isFinite(n) && n > 0) next[k] = n;
+                  }
+                  setTweak("iconSizesMm", next);
+                }}
+              />
+              <span className="adv-icon-unit">mm</span>
+            </div>
+          );
+        })}
+        {Object.keys(t.iconSizesMm || {}).length > 0 && (
+          <TweakButton
+            label="Reset all overrides"
+            secondary
+            onClick={() => setTweak("iconSizesMm", {})}
+          />
+        )}
+
         {/* Export actions moved to the top header bar's ⬇ Export menu.
             The hidden file <input>s for CSV/batch upload stay here
             because the header's menu items click them via refs. */}
@@ -2166,145 +2290,10 @@ function App() {
         <div className="twk-footer">powered by Xafai</div>
       </TweaksPanel>
 
-      {/* ─── Advanced settings side-panel ─────────────────────────────
-          Sits to the LEFT of the main Tweaks panel and slides in when
-          the "Advanced settings" trigger is clicked. Re-uses the
-          .twk-panel dark glass styling for visual continuity, but its
-          own `.adv-panel` rules differentiate it (left border accent,
-          its own header). Esc closes; click-outside intentionally
-          does NOT close so the user can compare values against the
-          live preview while tweaking. */}
-      {advancedOpen && (
-        <div className="adv-panel" role="dialog" aria-label="Advanced settings">
-          <div className="adv-hd">
-            <span className="adv-hd-pro">PRO</span>
-            <span className="adv-hd-title">Advanced settings</span>
-            <button
-              type="button"
-              className="adv-close"
-              aria-label="Close advanced settings"
-              onClick={() => setAdvancedOpen(false)}
-            >×</button>
-          </div>
-
-          <div className="adv-body">
-            {/* Row text size — drives both the preview's CSS variable
-                (.sm-row { font-size: var(--row-text-size-mm) }) and the
-                PDF render's rowSizeMm constant. Same row-fit math
-                applies — making text larger may trigger the rows
-                overflow warning sooner. */}
-            <div className="adv-sect">Row text size</div>
-            <TweakSlider
-              label="Text size"
-              value={t.rowTextSizeMm || 2.6}
-              min={1.5} max={6} step={0.1} unit="mm"
-              onChange={(v) => setTweak("rowTextSizeMm", v)}
-            />
-            <div className="adv-help">
-              Default 2.6&nbsp;mm matches typical retail shipping marks.
-              Larger text takes more vertical space; the canvas
-              warning will tell you if rows no longer fit.
-            </div>
-
-            {/* Brand → logo black-and-white filter (only meaningful when a
-                logo is uploaded). */}
-            <div className="adv-sect">Logo</div>
-            {t.brandLogo ? (
-              <TweakToggle
-                label="Force logo to pure black"
-                value={t.brandLogoBw}
-                onChange={(v) => setTweak("brandLogoBw", v)}
-              />
-            ) : (
-              <div className="adv-empty">Upload a logo in the main panel to enable B&amp;W filtering.</div>
-            )}
-
-            {/* Barcode (EAN-13) physical dimensions — vector accuracy is
-                guaranteed for any value in these ranges (GS1 spec: X-dim
-                0.264–0.660 mm at 100 % magnification). */}
-            <div className="adv-sect">Barcode dimensions</div>
-            <TweakSlider
-              label="Bar height"
-              value={t.barcodeHeightMm}
-              min={8} max={40} step={0.5} unit="mm"
-              onChange={(v) => setTweak("barcodeHeightMm", v)}
-            />
-            <TweakSlider
-              label="X-dimension"
-              value={t.barcodeXDimMm}
-              min={0.264} max={0.660} step={0.01} unit="mm"
-              onChange={(v) => setTweak("barcodeXDimMm", v)}
-            />
-            <div className="adv-help">
-              GS1 spec: 0.264 mm minimum, 0.330 mm default at 100&nbsp;%
-              magnification. Larger X-dim = wider barcode and better
-              scan distance.
-            </div>
-
-            {/* Per-icon sizing — enabled icons each get their own input;
-                leave blank to fall back to the global Icon size from the
-                main panel. */}
-            <div className="adv-sect">Per-icon sizes</div>
-            <div className="adv-help">
-              Override individual icons. Empty = use the global size
-              ({(t.iconSizeMm || 14)}&nbsp;mm).
-            </div>
-            {enabledIcons.length === 0 && (
-              <div className="adv-empty">No icons enabled yet — toggle some on in the main panel.</div>
-            )}
-            {enabledIcons.map((k) => {
-              const meta = getIconMeta(k, t.customIcons);
-              if (!meta) return null;
-              const override = t.iconSizesMm && t.iconSizesMm[k];
-              const isCustom = !window.ICON_LIBRARY[k];
-              return (
-                <div key={k} className="adv-icon-row">
-                  <div className="adv-icon-thumb">
-                    {meta.svg
-                      ? meta.svg
-                      : <span style={{ width: 22, height: 22, display: "grid", placeItems: "center" }}
-                              dangerouslySetInnerHTML={{ __html: meta.svgString || "" }} />}
-                  </div>
-                  <div className="adv-icon-meta">
-                    <div className="adv-icon-label">{meta.label}</div>
-                    <div className="adv-icon-iso">
-                      {isCustom
-                        ? "Custom upload"
-                        : <>{meta.iso} · ISO normal {meta.isoNormalMm}&nbsp;mm</>}
-                    </div>
-                  </div>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    className="twk-field adv-icon-input"
-                    placeholder={String(t.iconSizeMm || 14)}
-                    value={override == null ? "" : String(override)}
-                    onChange={(e) => {
-                      const s = e.target.value.trim();
-                      const next = { ...(t.iconSizesMm || {}) };
-                      if (s === "") {
-                        delete next[k];
-                      } else {
-                        const n = Number(s);
-                        if (Number.isFinite(n) && n > 0) next[k] = n;
-                      }
-                      setTweak("iconSizesMm", next);
-                    }}
-                  />
-                  <span className="adv-icon-unit">mm</span>
-                </div>
-              );
-            })}
-            {Object.keys(t.iconSizesMm || {}).length > 0 && (
-              <TweakButton
-                label="Reset all overrides"
-                secondary
-                onClick={() => setTweak("iconSizesMm", {})}
-              />
-            )}
-          </div>
-        </div>
-      )}
+      {/* Advanced side-panel removed in favour of an inline 'Advanced'
+          collapsible section inside the main sidebar (see TweaksPanel
+          above). The expert settings now sit alongside every other
+          group instead of behind a separate popout. */}
     </>
   );
 }

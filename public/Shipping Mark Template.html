@@ -521,6 +521,76 @@
        header above it. */
     background: rgba(255, 255, 255, 0.015);
   }
+  /* Sub-section eyebrow inside a collapsible body (used by the
+     Advanced section to group its own subgroups: Row text size,
+     Logo, Barcode dimensions, Per-icon sizes). Smaller and less
+     prominent than the section header, so the hierarchy reads as
+     "Section header → sub-eyebrows → controls". */
+  .twk-panel .twk-coll-body .twk-sect {
+    color: #9DC9E8 !important;
+    font: 700 9.5px/1 "Inter", "Roboto", sans-serif !important;
+    letter-spacing: 0.12em !important;
+    text-transform: uppercase !important;
+    padding: 12px 0 4px !important;
+    margin: 0 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .twk-panel .twk-coll-body .twk-sect:first-child {
+    border-top: 0;
+    padding-top: 4px !important;
+  }
+
+  /* ─── Content rows table ───────────────────────────────────────────
+     Compact inline editor for the row labels + values. One row per
+     content row: [label input] [value input] [×] — easier to scan
+     and re-order in your head than editing on-canvas only. */
+  .vyke-rows-table {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .vyke-rows-head,
+  .vyke-rows-row {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr 26px;
+    gap: 4px;
+    align-items: center;
+  }
+  .vyke-rows-head {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.45);
+    padding: 2px 4px 4px;
+  }
+  .vyke-rows-head > :last-child { display: block; }
+  .vyke-rows-row .twk-field {
+    height: 28px !important;
+    font-size: 11.5px !important;
+    padding: 0 8px !important;
+  }
+  .vyke-rows-del {
+    appearance: none;
+    width: 26px;
+    height: 26px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.55);
+    border-radius: 6px;
+    font: 600 14px/1 inherit;
+    cursor: pointer;
+    transition: background .12s, color .12s, border-color .12s;
+  }
+  .vyke-rows-del:hover:not(:disabled) {
+    background: rgba(255, 100, 100, 0.18);
+    border-color: rgba(255, 100, 100, 0.40);
+    color: #ff9a9a;
+  }
+  .vyke-rows-del:disabled {
+    opacity: 0.30;
+    cursor: not-allowed;
+  }
 
   .twk-panel .twk-lbl,
   .twk-panel .twk-lbl > span:first-child {
@@ -1751,18 +1821,18 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=31"></script>
-<script type="text/babel" src="auth.jsx?v=31"></script>
-<script type="text/babel" src="presets.jsx?v=31"></script>
-<script type="text/babel" src="activity.jsx?v=31"></script>
+<script type="text/babel" src="config.jsx?v=32"></script>
+<script type="text/babel" src="auth.jsx?v=32"></script>
+<script type="text/babel" src="presets.jsx?v=32"></script>
+<script type="text/babel" src="activity.jsx?v=32"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=31"></script>
-<script type="text/babel" src="icons.jsx?v=31"></script>
-<script type="text/babel" src="barcode.jsx?v=31"></script>
-<script type="text/babel" src="welcome.jsx?v=31"></script>
-<script type="text/babel" src="account-chip.jsx?v=31"></script>
-<script type="text/babel" src="presets-panel.jsx?v=31"></script>
-<script type="text/babel" src="app.jsx?v=31"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=32"></script>
+<script type="text/babel" src="icons.jsx?v=32"></script>
+<script type="text/babel" src="barcode.jsx?v=32"></script>
+<script type="text/babel" src="welcome.jsx?v=32"></script>
+<script type="text/babel" src="account-chip.jsx?v=32"></script>
+<script type="text/babel" src="presets-panel.jsx?v=32"></script>
+<script type="text/babel" src="app.jsx?v=32"></script>
 
 <style>
   #__standalone-tweaks-btn {
