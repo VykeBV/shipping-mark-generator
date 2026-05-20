@@ -412,6 +412,39 @@
     color: #f3c7c7;
   }
 
+  /* ─── Mobile: header dropdowns become viewport-anchored sheets ──
+     On narrow screens the trigger buttons aren't all hugging the right
+     edge (Feedback in particular sits well inside the header), so the
+     desktop `position: absolute; right: 0` would push the menu past
+     the viewport's LEFT edge — the user reported menus going
+     off-screen. Switch all three dropdowns to fixed-position sheets
+     spanning the viewport (minus an 8 px gutter) so they're always
+     fully visible and tappable, no matter where their trigger lives. */
+  @media (max-width: 640px) {
+    .vyke-export-menu,
+    .vyke-presets-menu,
+    .vyke-feedback-pop {
+      position: fixed;
+      top: 64px;                /* 56 px header + 8 px gap */
+      left: 8px;
+      right: 8px;
+      bottom: auto;
+      width: auto;
+      max-width: none;
+      min-width: 0;
+      /* Cap height so the sheet can't push past the viewport bottom
+         (especially important for the Presets list which can be long
+         and the Feedback popover whose textarea pushes height up). */
+      max-height: calc(100vh - 80px);
+      overflow-y: auto;
+      /* Long Export labels can wrap freely on mobile — there's enough
+         vertical space, and `white-space: nowrap` (set for desktop to
+         keep "Batch CSV → multi-page PDF" on one line) would only
+         force horizontal scroll here. */
+      white-space: normal;
+    }
+  }
+
   /* Account chip inside the header — inherits the shared header-btn
      shape above (height 36 / padding 14 / radius 8 / 12 px font).
      The original .vyke-acc-chip (account-chip.jsx) was designed for
@@ -1963,19 +1996,19 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=38"></script>
-<script type="text/babel" src="auth.jsx?v=38"></script>
-<script type="text/babel" src="presets.jsx?v=38"></script>
-<script type="text/babel" src="activity.jsx?v=38"></script>
-<script type="text/babel" src="feedback.jsx?v=38"></script>
+<script type="text/babel" src="config.jsx?v=39"></script>
+<script type="text/babel" src="auth.jsx?v=39"></script>
+<script type="text/babel" src="presets.jsx?v=39"></script>
+<script type="text/babel" src="activity.jsx?v=39"></script>
+<script type="text/babel" src="feedback.jsx?v=39"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=38"></script>
-<script type="text/babel" src="icons.jsx?v=38"></script>
-<script type="text/babel" src="barcode.jsx?v=38"></script>
-<script type="text/babel" src="welcome.jsx?v=38"></script>
-<script type="text/babel" src="account-chip.jsx?v=38"></script>
-<script type="text/babel" src="presets-panel.jsx?v=38"></script>
-<script type="text/babel" src="app.jsx?v=38"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=39"></script>
+<script type="text/babel" src="icons.jsx?v=39"></script>
+<script type="text/babel" src="barcode.jsx?v=39"></script>
+<script type="text/babel" src="welcome.jsx?v=39"></script>
+<script type="text/babel" src="account-chip.jsx?v=39"></script>
+<script type="text/babel" src="presets-panel.jsx?v=39"></script>
+<script type="text/babel" src="app.jsx?v=39"></script>
 
 <style>
   #__standalone-tweaks-btn {
