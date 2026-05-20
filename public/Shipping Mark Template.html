@@ -1243,6 +1243,21 @@
     pointer-events: none;
     user-select: none;
   }
+  /* While the welcome modal is up, demote every editor-chrome layer
+     BELOW the .vyke-welcome-backdrop (z-index 100). Without this the
+     Tweaks sidebar (z-index 2147483646) and the header (2147483647)
+     would visually overlay the modal — clipping the welcome card's
+     right column behind the sidebar and its top edge behind the
+     header. They stay blurred + pointer-events:none (rules above
+     and on .vyke-header) so they read as "preview of the editor"
+     exactly as intended; this just changes the stacking order so
+     the modal sits on top. */
+  body.vyke-locked .vyke-header,
+  body.vyke-locked .twk-panel,
+  body.vyke-locked .adv-panel,
+  body.vyke-locked #__help-btn {
+    z-index: 50 !important;
+  }
   .vyke-welcome-backdrop {
     position: fixed;
     inset: 0;
@@ -1257,12 +1272,12 @@
        way to scroll up to it. */
     place-items: safe center;
     overflow-y: auto;
-    /* Top padding clears the 56 px fixed .vyke-header (which sits at
-       z-index 2147483647, above this backdrop). Without it the top
-       of the welcome card slides behind the header and becomes
-       unreachable even with overflow-y: auto. 16 px on the other
-       three sides leaves a comfortable gutter. */
-    padding: 72px 16px 16px;
+    /* Uniform 16 px gutter on all sides. The header / sidebar /
+       adv-panel sit BELOW this backdrop while body.vyke-locked is
+       set (z-index rule a few selectors up), so we don't need to
+       reserve top/right padding for them — the modal can use the
+       full viewport area. */
+    padding: 16px;
     background: rgba(8, 9, 12, 0.65);
     -webkit-backdrop-filter: blur(8px) saturate(120%);
     backdrop-filter: blur(8px) saturate(120%);
@@ -2199,19 +2214,19 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=47"></script>
-<script type="text/babel" src="auth.jsx?v=47"></script>
-<script type="text/babel" src="presets.jsx?v=47"></script>
-<script type="text/babel" src="activity.jsx?v=47"></script>
-<script type="text/babel" src="feedback.jsx?v=47"></script>
+<script type="text/babel" src="config.jsx?v=48"></script>
+<script type="text/babel" src="auth.jsx?v=48"></script>
+<script type="text/babel" src="presets.jsx?v=48"></script>
+<script type="text/babel" src="activity.jsx?v=48"></script>
+<script type="text/babel" src="feedback.jsx?v=48"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=47"></script>
-<script type="text/babel" src="icons.jsx?v=47"></script>
-<script type="text/babel" src="barcode.jsx?v=47"></script>
-<script type="text/babel" src="welcome.jsx?v=47"></script>
-<script type="text/babel" src="account-chip.jsx?v=47"></script>
-<script type="text/babel" src="presets-panel.jsx?v=47"></script>
-<script type="text/babel" src="app.jsx?v=47"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=48"></script>
+<script type="text/babel" src="icons.jsx?v=48"></script>
+<script type="text/babel" src="barcode.jsx?v=48"></script>
+<script type="text/babel" src="welcome.jsx?v=48"></script>
+<script type="text/babel" src="account-chip.jsx?v=48"></script>
+<script type="text/babel" src="presets-panel.jsx?v=48"></script>
+<script type="text/babel" src="app.jsx?v=48"></script>
 
 <style>
   #__standalone-tweaks-btn {
