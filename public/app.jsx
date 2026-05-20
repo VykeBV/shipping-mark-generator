@@ -2342,31 +2342,18 @@ function App() {
             panel sits to the LEFT of this sidebar so it doesn't cover
             the live preview, matching the original pro-affordance UX. */}
 
-        {/* Export actions moved to the top header bar's ⬇ Export menu.
-            The hidden file <input>s for CSV/batch upload stay here
-            because the header's menu items click them via refs. */}
-        <input
-          ref={csvInputRef}
-          type="file"
-          accept=".csv,text/csv"
-          style={{ display: "none" }}
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            e.target.value = "";
-            if (f) importCsv(f);
-          }}
-        />
-        <input
-          ref={batchInputRef}
-          type="file"
-          accept=".csv,text/csv"
-          style={{ display: "none" }}
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            e.target.value = "";
-            if (f) batchPdf(f);
-          }}
-        />
+        {/* The hidden file <input>s for CSV import + batch PDF used
+            to live here, but TweaksPanel's section auto-grouper
+            (groupChildrenByTweakSection) sweeps every sibling after
+            a TweakSection marker INTO that section's CollapsibleSection
+            body — and a closed CollapsibleSection doesn't render its
+            children at all. So when Handling Icons was collapsed
+            (the default), the inputs weren't in the DOM, their refs
+            were null, and the header's "Import CSV" / "Batch CSV"
+            menu items did nothing. Moved them outside <TweaksPanel>
+            (just before the closing </> fragment, see below) so
+            they're always mounted regardless of which sections are
+            open. */}
 
         {/* The 'Tip' section that used to sit here has been broken
             up — its barcode-related text moved into the Barcode
@@ -2377,6 +2364,34 @@ function App() {
             `footer` prop above so the section auto-grouper doesn't
             sweep it into the Advanced collapsible. */}
       </TweaksPanel>
+
+      {/* Hidden file <input>s for CSV import + batch PDF, triggered
+          by ref.click() from the header's Export menu items. Lifted
+          OUT of <TweaksPanel> so they're always mounted — see the
+          comment inside TweaksPanel for the bug they used to cause
+          when nested inside a closed CollapsibleSection. */}
+      <input
+        ref={csvInputRef}
+        type="file"
+        accept=".csv,text/csv"
+        style={{ display: "none" }}
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (f) importCsv(f);
+        }}
+      />
+      <input
+        ref={batchInputRef}
+        type="file"
+        accept=".csv,text/csv"
+        style={{ display: "none" }}
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (f) batchPdf(f);
+        }}
+      />
 
       {/* ─── Advanced settings side-panel ─────────────────────────────
           Sits to the LEFT of the main Tweaks sidebar (CSS positions it
