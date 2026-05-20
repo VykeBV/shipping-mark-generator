@@ -2491,6 +2491,28 @@ function App() {
                 onClick={() => setTweak("iconSizesMm", {})}
               />
             )}
+
+            {/* ─── Reset everything ────────────────────────────────────
+                Destructive action — wipes every tweak (size, bleed,
+                rows, icons, barcode, logo, advanced overrides) back
+                to the DEFAULTS constant. Reuses resetState() which
+                already wraps the work in a window.confirm() prompt
+                so the user can't blow away their layout by accident.
+                Sectioned off at the bottom with its own header so it
+                reads as a separate "danger zone" affordance rather
+                than mingling with the per-icon controls above. */}
+            <div className="adv-sect">Reset</div>
+            <div className="adv-help">
+              Clears every setting on the canvas — size, bleed, rows,
+              icons, barcode, logo, and all advanced overrides — and
+              restores the default shipping mark. You'll be asked to
+              confirm before anything is changed.
+            </div>
+            <TweakButton
+              label="Reset everything to defaults"
+              secondary
+              onClick={resetState}
+            />
           </div>
         </div>
       )}
