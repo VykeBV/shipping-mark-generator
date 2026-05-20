@@ -2054,29 +2054,55 @@ function App() {
            — it sits just after the last section but scrolls with the
            sections if the list overflows. Used here for the Advanced
            settings trigger button (which should logically follow the
-           sections in reading order). */
+           sections in reading order) AND a "For your company" pitch
+           card directly underneath, so visitors browsing the editor
+           understand the demo is the showcase, and a custom branded
+           build is the product. */
         footer={
-          <button
-            type="button"
-            className="twk-pro-trigger"
-            /* Toggle: clicking again while the panel is open closes
-               it. Matches the affordance the aria-expanded state
-               already implies and saves a round-trip via the
-               panel's own × close button. */
-            onClick={() => setAdvancedOpen((v) => !v)}
-            aria-expanded={advancedOpen ? "true" : "false"}
-            aria-haspopup="dialog"
-          >
-            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
-              <path
-                fill="none" stroke="currentColor" strokeWidth="1.4"
-                strokeLinecap="round" strokeLinejoin="round"
-                d="M8 5.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM13.5 8a5.6 5.6 0 0 0-.1-1l1.4-1-1.4-2.4-1.7.6a5.4 5.4 0 0 0-1.7-1L9.7.6H6.4l-.3 1.7a5.4 5.4 0 0 0-1.7 1l-1.7-.6L1.3 5.1l1.4 1a5.6 5.6 0 0 0 0 2L1.3 9l1.4 2.4 1.7-.6a5.4 5.4 0 0 0 1.7 1l.3 1.7h3.3l.3-1.7a5.4 5.4 0 0 0 1.7-1l1.7.6L14.7 9l-1.4-1a5.6 5.6 0 0 0 .1-1z"
-              />
-            </svg>
-            <span className="twk-pro-label">Advanced settings</span>
-            <span className="twk-pro-chev" aria-hidden="true">›</span>
-          </button>
+          <>
+            <button
+              type="button"
+              className="twk-pro-trigger"
+              /* Toggle: clicking again while the panel is open closes
+                 it. Matches the affordance the aria-expanded state
+                 already implies and saves a round-trip via the
+                 panel's own × close button. */
+              onClick={() => setAdvancedOpen((v) => !v)}
+              aria-expanded={advancedOpen ? "true" : "false"}
+              aria-haspopup="dialog"
+            >
+              <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+                <path
+                  fill="none" stroke="currentColor" strokeWidth="1.4"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  d="M8 5.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM13.5 8a5.6 5.6 0 0 0-.1-1l1.4-1-1.4-2.4-1.7.6a5.4 5.4 0 0 0-1.7-1L9.7.6H6.4l-.3 1.7a5.4 5.4 0 0 0-1.7 1l-1.7-.6L1.3 5.1l1.4 1a5.6 5.6 0 0 0 0 2L1.3 9l1.4 2.4 1.7-.6a5.4 5.4 0 0 0 1.7 1l.3 1.7h3.3l.3-1.7a5.4 5.4 0 0 0 1.7-1l1.7.6L14.7 9l-1.4-1a5.6 5.6 0 0 0 .1-1z"
+                />
+              </svg>
+              <span className="twk-pro-label">Advanced settings</span>
+              <span className="twk-pro-chev" aria-hidden="true">›</span>
+            </button>
+
+            {/* Companion to the welcome modal's blue pitch card —
+                lives in the sidebar so visitors see the offer while
+                they're actually using the demo, not just on first
+                visit. Body text mentions concrete formats (product
+                cards, flyers, packaging, labels) so it's clear this
+                isn't a one-trick tool, and includes a direct mailto
+                to Tim so contact is one click away. */}
+            <div className="twk-pitch">
+              <div className="twk-pitch-eyebrow">For your company</div>
+              <div className="twk-pitch-title">Need it customised?</div>
+              <p className="twk-pitch-body">
+                We can build this for almost <b>any design</b> — product
+                cards, flyers, packaging, labels, brochures, you name it
+                — in your branding, and even <b>automate the flow</b>
+                straight from your product data.
+              </p>
+              <a className="twk-pitch-cta" href="mailto:tim@vyke.design?subject=Custom%20Vyke%20Create%20build">
+                Email tim@vyke.design →
+              </a>
+            </div>
+          </>
         }
         /* `credit` is rendered OUTSIDE .twk-body, pinned to the panel's
            bottom edge regardless of the body's scroll position. Used

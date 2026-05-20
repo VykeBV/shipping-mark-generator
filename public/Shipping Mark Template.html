@@ -968,6 +968,61 @@
     opacity: 0.7;
   }
 
+  /* ─── Sidebar "For your company" pitch card ─────────────────────────
+     Mirrors the blue-accent .vyke-welcome-pitch on the welcome modal
+     but compact for the 320 px sidebar. Lives just below the Advanced
+     settings trigger so visitors browsing the editor see the offer
+     while they're actually using the demo (the welcome card only
+     fires once per session). Brand-blue treatment matches the
+     Advanced trigger above it so they read as a connected "pro"
+     stack at the bottom of the sidebar. */
+  .twk-pitch {
+    margin-top: 10px;
+    background:
+      linear-gradient(180deg, rgba(157, 201, 232, 0.12), rgba(157, 201, 232, 0.04));
+    border: 1px solid rgba(157, 201, 232, 0.32);
+    border-left-width: 3px;
+    border-radius: 8px;
+    padding: 11px 12px 12px;
+    color: rgba(255, 255, 255, 0.78);
+    font: 11px/1.5 "Inter", "Roboto", system-ui, -apple-system, sans-serif;
+  }
+  .twk-pitch-eyebrow {
+    color: #9DC9E8;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    font-size: 8.5px;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+  .twk-pitch-title {
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 5px;
+  }
+  .twk-pitch-body { margin: 0 0 8px; }
+  .twk-pitch-body b {
+    color: #BCE0F2;
+    font-weight: 600;
+  }
+  .twk-pitch-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #9DC9E8;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 11px;
+    padding: 4px 0 0;
+    transition: color .12s ease;
+  }
+  .twk-pitch-cta:hover {
+    color: #BCE0F2;
+    text-decoration: underline;
+  }
+
   /* ─── Advanced settings side-panel ──────────────────────────────────
      Sits to the LEFT of the main Tweaks panel (so it doesn't cover
      the live preview). Same dark-glass treatment as .twk-panel, but
@@ -1378,11 +1433,25 @@
     margin-bottom: 6px;
   }
   .vyke-welcome-pitch-body {
-    margin: 0;
+    margin: 0 0 8px;
   }
   .vyke-welcome-pitch-body b {
     color: #BCE0F2;
     font-weight: 600;
+  }
+  .vyke-welcome-pitch-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #9DC9E8;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 11.5px;
+    transition: color .12s ease;
+  }
+  .vyke-welcome-pitch-cta:hover {
+    color: #BCE0F2;
+    text-decoration: underline;
   }
 
   /* ─── "In development" notice ─────────────────────────────────────────
@@ -2065,19 +2134,19 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=44"></script>
-<script type="text/babel" src="auth.jsx?v=44"></script>
-<script type="text/babel" src="presets.jsx?v=44"></script>
-<script type="text/babel" src="activity.jsx?v=44"></script>
-<script type="text/babel" src="feedback.jsx?v=44"></script>
+<script type="text/babel" src="config.jsx?v=45"></script>
+<script type="text/babel" src="auth.jsx?v=45"></script>
+<script type="text/babel" src="presets.jsx?v=45"></script>
+<script type="text/babel" src="activity.jsx?v=45"></script>
+<script type="text/babel" src="feedback.jsx?v=45"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=44"></script>
-<script type="text/babel" src="icons.jsx?v=44"></script>
-<script type="text/babel" src="barcode.jsx?v=44"></script>
-<script type="text/babel" src="welcome.jsx?v=44"></script>
-<script type="text/babel" src="account-chip.jsx?v=44"></script>
-<script type="text/babel" src="presets-panel.jsx?v=44"></script>
-<script type="text/babel" src="app.jsx?v=44"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=45"></script>
+<script type="text/babel" src="icons.jsx?v=45"></script>
+<script type="text/babel" src="barcode.jsx?v=45"></script>
+<script type="text/babel" src="welcome.jsx?v=45"></script>
+<script type="text/babel" src="account-chip.jsx?v=45"></script>
+<script type="text/babel" src="presets-panel.jsx?v=45"></script>
+<script type="text/babel" src="app.jsx?v=45"></script>
 
 <style>
   #__standalone-tweaks-btn {

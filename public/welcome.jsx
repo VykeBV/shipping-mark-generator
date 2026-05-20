@@ -111,13 +111,18 @@
                 Want this in your own branding?
               </div>
               <p className="vyke-welcome-pitch-body">
-                We can ship a fully customised version in your house style —
-                fonts, colours, logo, layout, paper sizes. We can also
-                <b> automate the whole flow</b>, generating shipping marks
-                straight from your product catalogue or ERP so your team
-                never opens a PDF editor again. Reach out and we'll scope
-                it with you.
+                We can build this for almost <b>any design</b> — product
+                cards, flyers, packaging, labels, brochures, you name it —
+                in your house style, and even <b>automate the whole flow</b>,
+                generating finished artwork straight from your product
+                catalogue or ERP so your team never opens a PDF editor again.
               </p>
+              <a
+                className="vyke-welcome-pitch-cta"
+                href="mailto:tim@vyke.design?subject=Custom%20Vyke%20Create%20build"
+              >
+                Email tim@vyke.design →
+              </a>
             </div>
 
             <div className="vyke-dev-notice">
