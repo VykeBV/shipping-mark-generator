@@ -708,6 +708,27 @@
     padding: 11px 14px;
     transition: background .14s ease, border-color .14s ease, color .14s ease;
   }
+  /* Gear icon before the label — uses mask-image so the icon's fill
+     inherits the header's current text color (blue when closed,
+     brighter blue on hover, white when open). Same gear silhouette
+     the old standalone .twk-pro-trigger button used. */
+  .twk-panel .twk-coll--pro > .twk-coll-hd::before {
+    content: "";
+    width: 13px;
+    height: 13px;
+    margin-right: 8px;
+    display: inline-block;
+    flex-shrink: 0;
+    background-color: currentColor;
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><path d='M8 5.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM13.5 8a5.6 5.6 0 0 0-.1-1l1.4-1-1.4-2.4-1.7.6a5.4 5.4 0 0 0-1.7-1L9.7.6H6.4l-.3 1.7a5.4 5.4 0 0 0-1.7 1l-1.7-.6L1.3 5.1l1.4 1a5.6 5.6 0 0 0 0 2L1.3 9l1.4 2.4 1.7-.6a5.4 5.4 0 0 0 1.7 1l.3 1.7h3.3l.3-1.7a5.4 5.4 0 0 0 1.7-1l1.7.6L14.7 9l-1.4-1a5.6 5.6 0 0 0 .1-1z'/></svg>");
+            mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><path d='M8 5.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM13.5 8a5.6 5.6 0 0 0-.1-1l1.4-1-1.4-2.4-1.7.6a5.4 5.4 0 0 0-1.7-1L9.7.6H6.4l-.3 1.7a5.4 5.4 0 0 0-1.7 1l-1.7-.6L1.3 5.1l1.4 1a5.6 5.6 0 0 0 0 2L1.3 9l1.4 2.4 1.7-.6a5.4 5.4 0 0 0 1.7 1l.3 1.7h3.3l.3-1.7a5.4 5.4 0 0 0 1.7-1l1.7.6L14.7 9l-1.4-1a5.6 5.6 0 0 0 .1-1z'/></svg>");
+    -webkit-mask-size: contain;
+            mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+            mask-position: center;
+  }
   .twk-panel .twk-coll--pro > .twk-coll-hd:hover {
     background:
       linear-gradient(180deg, rgba(157, 201, 232, 0.14), rgba(157, 201, 232, 0.06));
@@ -2017,19 +2038,19 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=34"></script>
-<script type="text/babel" src="auth.jsx?v=34"></script>
-<script type="text/babel" src="presets.jsx?v=34"></script>
-<script type="text/babel" src="activity.jsx?v=34"></script>
-<script type="text/babel" src="feedback.jsx?v=34"></script>
+<script type="text/babel" src="config.jsx?v=35"></script>
+<script type="text/babel" src="auth.jsx?v=35"></script>
+<script type="text/babel" src="presets.jsx?v=35"></script>
+<script type="text/babel" src="activity.jsx?v=35"></script>
+<script type="text/babel" src="feedback.jsx?v=35"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=34"></script>
-<script type="text/babel" src="icons.jsx?v=34"></script>
-<script type="text/babel" src="barcode.jsx?v=34"></script>
-<script type="text/babel" src="welcome.jsx?v=34"></script>
-<script type="text/babel" src="account-chip.jsx?v=34"></script>
-<script type="text/babel" src="presets-panel.jsx?v=34"></script>
-<script type="text/babel" src="app.jsx?v=34"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=35"></script>
+<script type="text/babel" src="icons.jsx?v=35"></script>
+<script type="text/babel" src="barcode.jsx?v=35"></script>
+<script type="text/babel" src="welcome.jsx?v=35"></script>
+<script type="text/babel" src="account-chip.jsx?v=35"></script>
+<script type="text/babel" src="presets-panel.jsx?v=35"></script>
+<script type="text/babel" src="app.jsx?v=35"></script>
 
 <style>
   #__standalone-tweaks-btn {
