@@ -2242,16 +2242,23 @@ function App() {
         <TweakSection label="Barcode (EAN-13)" />
         <TweakText label="Digits (12 or 13)" value={t.ean13}
                    onChange={(v) => setTweak("ean13", v)} />
-        <div className="twk-tip" style={{ marginTop: 4 }}>
-          {normEan.ok
-            ? <>
-                ✓ <b>{normEan.digits}</b> — width {eanWidthMm.toFixed(1)} mm at xDim {t.barcodeXDimMm} mm<br/>
-                <span style={{ opacity: 0.7, fontSize: "10.5px" }}>
-                  Rendered by <b style={{ color: "#9DC9E8" }}>bwip-js</b> (BWIPP reference) → <b style={{ color: "#9DC9E8" }}>svg2pdf.js</b> — ISO/IEC 15420 compliant, true vector PDF.
-                </span>
-              </>
-            : <>✗ <b style={{ color: "#ff8080" }}>{normEan.error}</b></>}
-        </div>
+        {/* Success → calm blue tip (reassurance). Failure → red
+            .twk-warning card so the validation problem actually
+            registers — previously the error sat inside the same
+            muted blue tip used for confirmations and got lost. */}
+        {normEan.ok ? (
+          <div className="twk-tip" style={{ marginTop: 4 }}>
+            ✓ <b>{normEan.digits}</b> — width {eanWidthMm.toFixed(1)} mm at xDim {t.barcodeXDimMm} mm<br/>
+            <span style={{ opacity: 0.7, fontSize: "10.5px" }}>
+              Rendered by <b style={{ color: "#9DC9E8" }}>bwip-js</b> (BWIPP reference) → <b style={{ color: "#9DC9E8" }}>svg2pdf.js</b> — ISO/IEC 15420 compliant, true vector PDF.
+            </span>
+          </div>
+        ) : (
+          <div className="twk-warning" style={{ marginTop: 4 }} role="alert">
+            <span aria-hidden="true" style={{ marginRight: 6 }}>⚠</span>
+            <b>{normEan.error}</b>
+          </div>
+        )}
         <div className="twk-tip" style={{ marginTop: 4 }}>
           The <b>EAN-13 barcode</b> is computed from your digits and validated
           live — enter 12 digits to auto-add the check digit, or 13 to validate.
