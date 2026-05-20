@@ -283,23 +283,164 @@
   .vyke-presets-menu .vyke-pre-time { color: rgba(255, 255, 255, 0.5); }
   .vyke-presets-menu .vyke-pre-empty { color: rgba(255, 255, 255, 0.55); }
 
+  /* Feedback button variant — slightly warmer than the neutral Presets
+     button so it stands out as an invitation, but still secondary to
+     the blue Export primary. A soft amber tint on hover signals "we
+     want to hear from you" without competing for primary attention. */
+  .vyke-header-btn--feedback {
+    border-color: rgba(255, 196, 120, 0.28) !important;
+    background: rgba(255, 196, 120, 0.08) !important;
+    color: #f4dcb6 !important;
+  }
+  .vyke-header-btn--feedback:hover {
+    background: rgba(255, 196, 120, 0.16) !important;
+    border-color: rgba(255, 196, 120, 0.48) !important;
+    color: #fff !important;
+  }
+
+  /* Feedback popover — same dark-glass treatment as Presets / Export,
+     anchored top-right under the Feedback button. Slightly narrower
+     than presets (no scrollable list) and fixed-height (the textarea
+     does its own vertical sizing via rows=5). */
+  .vyke-feedback-pop {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 340px;
+    background: rgba(18, 19, 23, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+    z-index: 41;
+    font-family: "Inter", "Roboto", system-ui, -apple-system, sans-serif;
+  }
+  .vyke-feedback-title {
+    font: 600 13px/1.3 inherit;
+    color: rgba(255, 255, 255, 0.95);
+  }
+  .vyke-feedback-pitch {
+    font: 400 11.5px/1.5 inherit;
+    color: rgba(255, 255, 255, 0.65);
+    margin: 0;
+  }
+  .vyke-feedback-pop form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .vyke-feedback-text {
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+    min-height: 96px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: rgba(255, 255, 255, 0.92);
+    border-radius: 8px;
+    padding: 10px 11px;
+    font: 400 12px/1.45 inherit;
+    outline: none;
+    transition: border-color .12s ease, background .12s ease;
+  }
+  .vyke-feedback-text::placeholder {
+    color: rgba(255, 255, 255, 0.38);
+  }
+  .vyke-feedback-text:focus {
+    border-color: rgba(157, 201, 232, 0.55);
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .vyke-feedback-text:disabled { opacity: 0.6; }
+  .vyke-feedback-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .vyke-feedback-meta {
+    font: 400 10.5px/1.3 inherit;
+    color: rgba(255, 255, 255, 0.5);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .vyke-feedback-meta b {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.78);
+  }
+  .vyke-feedback-send {
+    appearance: none;
+    border: 1px solid rgba(157, 201, 232, 0.55);
+    background: rgba(157, 201, 232, 0.18);
+    color: #e7f1f8;
+    font: 600 12px/1 inherit;
+    padding: 8px 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background .12s ease, border-color .12s ease;
+    flex-shrink: 0;
+  }
+  .vyke-feedback-send:hover:not(:disabled) {
+    background: rgba(157, 201, 232, 0.30);
+    border-color: rgba(157, 201, 232, 0.75);
+  }
+  .vyke-feedback-send:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .vyke-feedback-status {
+    font: 500 11px/1.4 inherit;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+  }
+  .vyke-feedback-status.is-ok {
+    background: rgba(120, 200, 140, 0.12);
+    border-color: rgba(120, 200, 140, 0.35);
+    color: #c9ecd3;
+  }
+  .vyke-feedback-status.is-err {
+    background: rgba(232, 110, 110, 0.12);
+    border-color: rgba(232, 110, 110, 0.35);
+    color: #f3c7c7;
+  }
+
   /* Account chip inside the header — inherits the shared header-btn
      shape above (height 36 / padding 14 / radius 8 / 12 px font).
-     We only need to override the colour treatment + override the
-     fullwidth .vyke-acc-chip default coming from account-chip.jsx. */
+     The original .vyke-acc-chip (account-chip.jsx) was designed for
+     a stacked sidebar layout: width:100%, padding 7×9, margin 0 0 8,
+     border-radius 10, font 11.5/1. All of those need overriding in
+     the header context — otherwise the chip's bottom margin pushes
+     it visually higher than its siblings AND the different padding /
+     border-radius make it look like a different shape. */
   .vyke-header .vyke-acc-wrap { width: auto; }
   .vyke-header .vyke-acc-chip {
-    width: auto;
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.10);
-    color: rgba(255, 255, 255, 0.88);
-    /* slightly tighter left padding so the avatar circle has room */
-    padding-left: 6px;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 12px 0 6px !important;
+    border-radius: 8px !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(255, 255, 255, 0.10) !important;
+    color: rgba(255, 255, 255, 0.88) !important;
+    font: 500 12px/1 "Inter", "Roboto", system-ui, -apple-system, sans-serif !important;
   }
   .vyke-header .vyke-acc-chip:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.20);
-    color: #fff;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.20) !important;
+    color: #fff !important;
+  }
+  /* Slightly larger avatar so it visually balances the text + dot
+     within the 36 px chip (the 22 px default looked small next to
+     the bolder header text). */
+  .vyke-header .vyke-acc-avatar {
+    width: 24px; height: 24px;
+    font-size: 12px;
   }
   @media (max-width: 768px) {
     .stage {
@@ -1821,18 +1962,19 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=32"></script>
-<script type="text/babel" src="auth.jsx?v=32"></script>
-<script type="text/babel" src="presets.jsx?v=32"></script>
-<script type="text/babel" src="activity.jsx?v=32"></script>
+<script type="text/babel" src="config.jsx?v=33"></script>
+<script type="text/babel" src="auth.jsx?v=33"></script>
+<script type="text/babel" src="presets.jsx?v=33"></script>
+<script type="text/babel" src="activity.jsx?v=33"></script>
+<script type="text/babel" src="feedback.jsx?v=33"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=32"></script>
-<script type="text/babel" src="icons.jsx?v=32"></script>
-<script type="text/babel" src="barcode.jsx?v=32"></script>
-<script type="text/babel" src="welcome.jsx?v=32"></script>
-<script type="text/babel" src="account-chip.jsx?v=32"></script>
-<script type="text/babel" src="presets-panel.jsx?v=32"></script>
-<script type="text/babel" src="app.jsx?v=32"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=33"></script>
+<script type="text/babel" src="icons.jsx?v=33"></script>
+<script type="text/babel" src="barcode.jsx?v=33"></script>
+<script type="text/babel" src="welcome.jsx?v=33"></script>
+<script type="text/babel" src="account-chip.jsx?v=33"></script>
+<script type="text/babel" src="presets-panel.jsx?v=33"></script>
+<script type="text/babel" src="app.jsx?v=33"></script>
 
 <style>
   #__standalone-tweaks-btn {

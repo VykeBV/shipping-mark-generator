@@ -375,11 +375,93 @@ async function logoToBlackPng(src, threshold = 200) {
 }
 
 // ─── Main App ────────────────────────────────────────────────────────────────
+// ─── FeedbackPopover ──────────────────────────────────────────────────────────
+// Pitch + textarea + submit. Wraps window.FEEDBACK.submit (feedback.jsx)
+// which writes to Supabase when configured or falls back to a
+// localStorage ring buffer. Used by the Feedback button in HeaderBar.
+function FeedbackPopover({ user, onClose }) {
+  const { useState, useRef, useEffect } = React;
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState(null); // null | { ok, text, offline? }
+  const textRef = useRef(null);
+  useEffect(() => { textRef.current && textRef.current.focus(); }, []);
+  const submit = async (e) => {
+    if (e) e.preventDefault();
+    if (!message.trim() || busy) return;
+    setBusy(true);
+    try {
+      const res = await window.FEEDBACK.submit({ message, user });
+      if (res.ok) {
+        setStatus({
+          ok: true,
+          text: res.offline
+            ? "Saved on this device — we'll pick it up next sync."
+            : "Thank you! We read every message.",
+          offline: !!res.offline,
+        });
+        setMessage("");
+        setTimeout(onClose, 2200);
+      } else {
+        setStatus({ ok: false, text: res.error || "Something went wrong — try again?" });
+      }
+    } catch (err) {
+      setStatus({ ok: false, text: err?.message || "Something went wrong — try again?" });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="vyke-feedback-pop" role="dialog" aria-label="Send feedback">
+      <div className="vyke-feedback-title">Help us build something useful</div>
+      <p className="vyke-feedback-pitch">
+        We're still developing this tool — let us know what you think and how we
+        can improve. Only with your feedback can we create something truly useful.
+      </p>
+      <form onSubmit={submit}>
+        <textarea
+          ref={textRef}
+          className="vyke-feedback-text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="What's working, what's broken, what's missing?"
+          rows={5}
+          maxLength={4000}
+          disabled={busy}
+        />
+        <div className="vyke-feedback-row">
+          <span className="vyke-feedback-meta">
+            {user
+              ? <>Sending as <b>{user.email}</b></>
+              : <>Sending anonymously</>}
+          </span>
+          <button
+            type="submit"
+            className="vyke-feedback-send"
+            disabled={busy || !message.trim()}
+          >
+            {busy ? "Sending…" : "Send feedback"}
+          </button>
+        </div>
+        {status && (
+          <div
+            className={"vyke-feedback-status " + (status.ok ? "is-ok" : "is-err")}
+            role={status.ok ? "status" : "alert"}
+          >
+            {status.text}
+          </div>
+        )}
+      </form>
+    </div>
+  );
+}
+
 // ─── HeaderBar ────────────────────────────────────────────────────────────────
 // Top application bar. Holds the Vyke Create logo on the left, then
-// (right side, in order) the Presets menu, the Export menu, the
-// account chip. Replaces what used to live inside the Tweaks panel
-// header / body so the panel can focus purely on document editing.
+// (right side, in order) the Presets menu, the Feedback button, the
+// Export menu, the account chip. Replaces what used to live inside
+// the Tweaks panel header / body so the panel can focus purely on
+// document editing.
 function HeaderBar({
   user, onSignOut,
   widthMm, heightMm, bleedMm, batchProgress,
@@ -389,11 +471,13 @@ function HeaderBar({
   const { useState, useEffect, useRef } = React;
   const [exportOpen, setExportOpen] = useState(false);
   const [presetsOpen, setPresetsOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const exportRef = useRef(null);
   const presetsRef = useRef(null);
+  const feedbackRef = useRef(null);
   // Close any open dropdown on outside-click or Escape.
   useEffect(() => {
-    if (!exportOpen && !presetsOpen) return;
+    if (!exportOpen && !presetsOpen && !feedbackOpen) return;
     const onDocClick = (e) => {
       if (exportOpen && exportRef.current && !exportRef.current.contains(e.target)) {
         setExportOpen(false);
@@ -401,9 +485,16 @@ function HeaderBar({
       if (presetsOpen && presetsRef.current && !presetsRef.current.contains(e.target)) {
         setPresetsOpen(false);
       }
+      if (feedbackOpen && feedbackRef.current && !feedbackRef.current.contains(e.target)) {
+        setFeedbackOpen(false);
+      }
     };
     const onKey = (e) => {
-      if (e.key === "Escape") { setExportOpen(false); setPresetsOpen(false); }
+      if (e.key === "Escape") {
+        setExportOpen(false);
+        setPresetsOpen(false);
+        setFeedbackOpen(false);
+      }
     };
     document.addEventListener("mousedown", onDocClick);
     document.addEventListener("keydown", onKey);
@@ -411,7 +502,12 @@ function HeaderBar({
       document.removeEventListener("mousedown", onDocClick);
       document.removeEventListener("keydown", onKey);
     };
-  }, [exportOpen, presetsOpen]);
+  }, [exportOpen, presetsOpen, feedbackOpen]);
+  const closeAll = () => {
+    setExportOpen(false);
+    setPresetsOpen(false);
+    setFeedbackOpen(false);
+  };
 
   const sizeSuffix = bleedMm
     ? `${widthMm} × ${heightMm} mm + ${bleedMm} mm bleed`
@@ -430,6 +526,35 @@ function HeaderBar({
       <div className="vyke-header-logo" aria-label="Vyke Create" />
       <div className="vyke-header-spacer" />
 
+      {/* Feedback button — always visible, always discoverable. Opens
+          a popover with a short pitch + text area so users can tell
+          us what to fix while we're still iterating. */}
+      <div className="vyke-export-wrap" ref={feedbackRef}>
+        <button
+          type="button"
+          className="vyke-header-btn vyke-header-btn--feedback"
+          onClick={() => { setFeedbackOpen((v) => !v); setExportOpen(false); setPresetsOpen(false); }}
+          aria-expanded={feedbackOpen ? "true" : "false"}
+          aria-haspopup="dialog"
+          title="Share feedback with the Vyke team"
+        >
+          <svg viewBox="0 0 14 14" aria-hidden="true">
+            <path
+              fill="none" stroke="currentColor" strokeWidth="1.4"
+              strokeLinecap="round" strokeLinejoin="round"
+              d="M1.5 3a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7L4 12.5V10H2.5a1 1 0 0 1-1-1V3z"
+            />
+          </svg>
+          Feedback
+        </button>
+        {feedbackOpen && (
+          <FeedbackPopover
+            user={user}
+            onClose={() => setFeedbackOpen(false)}
+          />
+        )}
+      </div>
+
       {/* Presets menu — same dropdown pattern as Export. Wraps the
           existing window.PresetsPanel component so all save / load /
           delete logic stays in one place. Only shown when signed in. */}
@@ -438,7 +563,7 @@ function HeaderBar({
           <button
             type="button"
             className="vyke-header-btn"
-            onClick={() => { setPresetsOpen((v) => !v); setExportOpen(false); }}
+            onClick={() => { setPresetsOpen((v) => !v); setExportOpen(false); setFeedbackOpen(false); }}
             aria-expanded={presetsOpen ? "true" : "false"}
             aria-haspopup="menu"
             title="Save the current setup as a preset, or load one you saved earlier"
@@ -469,7 +594,7 @@ function HeaderBar({
         <button
           type="button"
           className="vyke-export-trigger"
-          onClick={() => { setExportOpen((v) => !v); setPresetsOpen(false); }}
+          onClick={() => { setExportOpen((v) => !v); setPresetsOpen(false); setFeedbackOpen(false); }}
           aria-expanded={exportOpen ? "true" : "false"}
           aria-haspopup="menu"
         >
