@@ -1153,7 +1153,15 @@
   .adv-panel .twk-btn.secondary:hover { background: rgba(255, 255, 255, 0.12); }
 
   .twk-footer {
-    margin-top: 18px;
+    /* `margin-top: auto` inside the flex-column .twk-body consumes
+       every leftover vertical pixel, pinning the credit to the
+       BOTTOM of the sidebar whenever sections are compact enough
+       that there's space to spare. When sections fill the panel and
+       the body scrolls, the auto margin collapses to 0 and the
+       credit appears naturally after the Advanced trigger button —
+       no weird overlap. The 10 px flex gap on .twk-body still
+       guarantees breathing room in the scroll case. */
+    margin-top: auto;
     padding-top: 12px;
     /* Faded divider + lighter text — the footer should read as a
        quiet credit, not compete with the section menu rows above. */
@@ -1996,19 +2004,19 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=39"></script>
-<script type="text/babel" src="auth.jsx?v=39"></script>
-<script type="text/babel" src="presets.jsx?v=39"></script>
-<script type="text/babel" src="activity.jsx?v=39"></script>
-<script type="text/babel" src="feedback.jsx?v=39"></script>
+<script type="text/babel" src="config.jsx?v=40"></script>
+<script type="text/babel" src="auth.jsx?v=40"></script>
+<script type="text/babel" src="presets.jsx?v=40"></script>
+<script type="text/babel" src="activity.jsx?v=40"></script>
+<script type="text/babel" src="feedback.jsx?v=40"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=39"></script>
-<script type="text/babel" src="icons.jsx?v=39"></script>
-<script type="text/babel" src="barcode.jsx?v=39"></script>
-<script type="text/babel" src="welcome.jsx?v=39"></script>
-<script type="text/babel" src="account-chip.jsx?v=39"></script>
-<script type="text/babel" src="presets-panel.jsx?v=39"></script>
-<script type="text/babel" src="app.jsx?v=39"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=40"></script>
+<script type="text/babel" src="icons.jsx?v=40"></script>
+<script type="text/babel" src="barcode.jsx?v=40"></script>
+<script type="text/babel" src="welcome.jsx?v=40"></script>
+<script type="text/babel" src="account-chip.jsx?v=40"></script>
+<script type="text/babel" src="presets-panel.jsx?v=40"></script>
+<script type="text/babel" src="app.jsx?v=40"></script>
 
 <style>
   #__standalone-tweaks-btn {
