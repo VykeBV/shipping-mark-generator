@@ -2042,7 +2042,13 @@ function App() {
         onResetState={resetState}
       />
 
-      <TweaksPanel>
+      <TweaksPanel
+        /* Footer lives in its own prop slot so it can't be swept into
+           the Advanced collapsible by the section auto-grouper (which
+           pulls every sibling after a TweakSection marker into that
+           section's body). */
+        footer={<div className="twk-footer">powered by Xafai</div>}
+      >
         <TweakSection label="Size & bleed" />
         {/* Display-unit selector. Stored value stays in mm internally so
             the layout / PDF / presets are unit-stable; this only changes
@@ -2414,9 +2420,10 @@ function App() {
             up — its barcode-related text moved into the Barcode
             section above (so users see it WHILE editing the EAN),
             and the CSV / batch reminder is no longer needed since
-            those actions live in the header's Export menu. */}
-
-        <div className="twk-footer">powered by Xafai</div>
+            those actions live in the header's Export menu.
+            The 'powered by Xafai' footer is passed via TweaksPanel's
+            `footer` prop above so the section auto-grouper doesn't
+            sweep it into the Advanced collapsible. */}
       </TweaksPanel>
 
       {/* Advanced side-panel removed in favour of an inline 'Advanced'
