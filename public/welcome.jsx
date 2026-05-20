@@ -52,12 +52,17 @@
         <form className="vyke-welcome-card" onSubmit={submit}>
           <div className="vyke-welcome-hd">
             <div className="vyke-welcome-logo" aria-hidden="true" />
-            <div className="vyke-welcome-eyebrow">Vyke Create · Shipping Marks</div>
-            <h1 className="vyke-welcome-title">Welcome</h1>
+            <div className="vyke-welcome-eyebrow">
+              Vyke Create · Shipping Marks
+              <span className="vyke-welcome-demo-chip">Free demo</span>
+            </div>
+            <h1 className="vyke-welcome-title">Try the generator</h1>
             <p className="vyke-welcome-intro">
-              Generate print-ready shipping mark PDFs with vector-precise EAN-13
-              barcodes and official ISO 7000 handling icons. Save your designs
-              as presets so you can pick them up next time.
+              This is a <b>free public demo</b> of what Vyke can build — a
+              showcase, not a production tool. Generate print-ready shipping
+              mark PDFs with vector-precise EAN-13 barcodes and official ISO
+              7000 handling icons, and save your designs as presets so you can
+              pick them up next time.
             </p>
           </div>
 
@@ -100,9 +105,24 @@
               {busy ? "One moment…" : "Continue →"}
             </button>
 
+            <div className="vyke-welcome-pitch">
+              <div className="vyke-welcome-pitch-eyebrow">For your company</div>
+              <div className="vyke-welcome-pitch-title">
+                Want this in your own branding?
+              </div>
+              <p className="vyke-welcome-pitch-body">
+                We can ship a fully customised version in your house style —
+                fonts, colours, logo, layout, paper sizes. We can also
+                <b> automate the whole flow</b>, generating shipping marks
+                straight from your product catalogue or ERP so your team
+                never opens a PDF editor again. Reach out and we'll scope
+                it with you.
+              </p>
+            </div>
+
             <div className="vyke-dev-notice">
               <span className="vyke-dev-notice-icon" aria-hidden="true">🚧</span>
-              <b>Heads up — this tool is still in active development.</b>
+              <b>Heads up — this demo is still in active development.</b>
               {" "}You may be using it while we're shipping changes, so
               some features might not behave cleanly yet. If something
               breaks, please let us know.

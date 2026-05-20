@@ -1240,6 +1240,24 @@
     font-size: 9.5px;
     text-transform: uppercase;
     margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  /* "Free demo" chip alongside the product name in the eyebrow.
+     Green tint so it reads as "this costs you nothing, come in" —
+     same hue family as the green Feedback button in the header for
+     consistency. Slightly bolder than the surrounding eyebrow so
+     it pops as a badge rather than a label. */
+  .vyke-welcome-demo-chip {
+    color: #c9ecd3;
+    background: rgba(120, 200, 140, 0.16);
+    border: 1px solid rgba(120, 200, 140, 0.45);
+    padding: 3px 7px 2px;
+    border-radius: 999px;
+    font-size: 9px;
+    letter-spacing: 0.14em;
   }
   .vyke-welcome-title {
     margin: 4px 0 8px;
@@ -1325,6 +1343,46 @@
     font-size: 10.5px;
     line-height: 1.5;
     text-align: center;
+  }
+
+  /* ─── "Want this for your company?" pitch ─────────────────────────
+     Blue-accent card inside the welcome modal, just above the
+     "in development" notice. Frames the demo as a showcase of what
+     Vyke can ship — custom-branded versions + automated generation
+     straight from product data. Brand-blue treatment to read as
+     positive / inviting (the green chip in the eyebrow already
+     communicates "this is free"; this one is "this is what's
+     possible"). */
+  .vyke-welcome-pitch {
+    background:
+      linear-gradient(180deg, rgba(157, 201, 232, 0.12), rgba(157, 201, 232, 0.04));
+    border: 1px solid rgba(157, 201, 232, 0.38);
+    border-left-width: 3px;
+    border-radius: 8px;
+    padding: 12px 14px 14px;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 11.5px;
+    line-height: 1.55;
+  }
+  .vyke-welcome-pitch-eyebrow {
+    color: #9DC9E8;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    font-size: 9px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .vyke-welcome-pitch-title {
+    color: #fff;
+    font: 600 13px/1.3 "Inter", "Roboto", system-ui, -apple-system, sans-serif;
+    margin-bottom: 6px;
+  }
+  .vyke-welcome-pitch-body {
+    margin: 0;
+  }
+  .vyke-welcome-pitch-body b {
+    color: #BCE0F2;
+    font-weight: 600;
   }
 
   /* ─── "In development" notice ─────────────────────────────────────────
@@ -2007,19 +2065,19 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=43"></script>
-<script type="text/babel" src="auth.jsx?v=43"></script>
-<script type="text/babel" src="presets.jsx?v=43"></script>
-<script type="text/babel" src="activity.jsx?v=43"></script>
-<script type="text/babel" src="feedback.jsx?v=43"></script>
+<script type="text/babel" src="config.jsx?v=44"></script>
+<script type="text/babel" src="auth.jsx?v=44"></script>
+<script type="text/babel" src="presets.jsx?v=44"></script>
+<script type="text/babel" src="activity.jsx?v=44"></script>
+<script type="text/babel" src="feedback.jsx?v=44"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=43"></script>
-<script type="text/babel" src="icons.jsx?v=43"></script>
-<script type="text/babel" src="barcode.jsx?v=43"></script>
-<script type="text/babel" src="welcome.jsx?v=43"></script>
-<script type="text/babel" src="account-chip.jsx?v=43"></script>
-<script type="text/babel" src="presets-panel.jsx?v=43"></script>
-<script type="text/babel" src="app.jsx?v=43"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=44"></script>
+<script type="text/babel" src="icons.jsx?v=44"></script>
+<script type="text/babel" src="barcode.jsx?v=44"></script>
+<script type="text/babel" src="welcome.jsx?v=44"></script>
+<script type="text/babel" src="account-chip.jsx?v=44"></script>
+<script type="text/babel" src="presets-panel.jsx?v=44"></script>
+<script type="text/babel" src="app.jsx?v=44"></script>
 
 <style>
   #__standalone-tweaks-btn {
