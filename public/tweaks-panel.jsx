@@ -184,7 +184,8 @@ function useTweaks(defaults) {
 // The close button posts __edit_mode_dismissed so the host's toolbar toggle
 // flips off in lockstep; the host echoes __deactivate_edit_mode back which
 // is what actually hides the panel.
-function TweaksPanel({ title = 'Tweaks', noDeckControls = false, footer = null, children }) {
+function TweaksPanel({ title = 'Tweaks', noDeckControls = false,
+                       footer = null, credit = null, children }) {
   const [open, setOpen] = React.useState(false);
   const dragRef = React.useRef(null);
   // Auto-inject a rail toggle when a <deck-stage> is on the page. The
@@ -314,10 +315,16 @@ function TweaksPanel({ title = 'Tweaks', noDeckControls = false, footer = null, 
             </CollapsibleSection>
           )}
           {/* Footer slot — rendered outside the auto-grouped section list
-              so it stays visible at the panel bottom no matter which
-              collapsibles are open. Used for the "powered by" credit. */}
+              but still INSIDE .twk-body, so it scrolls with the
+              sections. Used by the host app for the Advanced trigger
+              button (which should sit after the last section). */}
           {footer}
         </div>
+        {/* Credit slot — rendered OUTSIDE .twk-body so it's pinned to
+            the panel's bottom edge regardless of body scroll position.
+            The host CSS gives .twk-body `flex: 1` so this sibling
+            naturally lands at the bottom of the flex-column panel. */}
+        {credit && <div className="twk-credit">{credit}</div>}
       </div>
     </>
   );

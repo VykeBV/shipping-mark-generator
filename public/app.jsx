@@ -2050,36 +2050,39 @@ function App() {
       />
 
       <TweaksPanel
-        /* Footer holds the "Advanced settings" trigger button + the
-           "powered by Xafai" credit, both rendered outside the
-           auto-grouped section list so they're always visible at the
-           sidebar bottom regardless of which sections are open. */
+        /* `footer` is rendered at the END of the scrollable .twk-body
+           — it sits just after the last section but scrolls with the
+           sections if the list overflows. Used here for the Advanced
+           settings trigger button (which should logically follow the
+           sections in reading order). */
         footer={
-          <>
-            <button
-              type="button"
-              className="twk-pro-trigger"
-              /* Toggle: clicking again while the panel is open closes
-                 it. Matches the affordance the aria-expanded state
-                 already implies and saves a round-trip via the
-                 panel's own × close button. */
-              onClick={() => setAdvancedOpen((v) => !v)}
-              aria-expanded={advancedOpen ? "true" : "false"}
-              aria-haspopup="dialog"
-            >
-              <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
-                <path
-                  fill="none" stroke="currentColor" strokeWidth="1.4"
-                  strokeLinecap="round" strokeLinejoin="round"
-                  d="M8 5.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM13.5 8a5.6 5.6 0 0 0-.1-1l1.4-1-1.4-2.4-1.7.6a5.4 5.4 0 0 0-1.7-1L9.7.6H6.4l-.3 1.7a5.4 5.4 0 0 0-1.7 1l-1.7-.6L1.3 5.1l1.4 1a5.6 5.6 0 0 0 0 2L1.3 9l1.4 2.4 1.7-.6a5.4 5.4 0 0 0 1.7 1l.3 1.7h3.3l.3-1.7a5.4 5.4 0 0 0 1.7-1l1.7.6L14.7 9l-1.4-1a5.6 5.6 0 0 0 .1-1z"
-                />
-              </svg>
-              <span className="twk-pro-label">Advanced settings</span>
-              <span className="twk-pro-chev" aria-hidden="true">›</span>
-            </button>
-            <div className="twk-footer">powered by Xafai</div>
-          </>
+          <button
+            type="button"
+            className="twk-pro-trigger"
+            /* Toggle: clicking again while the panel is open closes
+               it. Matches the affordance the aria-expanded state
+               already implies and saves a round-trip via the
+               panel's own × close button. */
+            onClick={() => setAdvancedOpen((v) => !v)}
+            aria-expanded={advancedOpen ? "true" : "false"}
+            aria-haspopup="dialog"
+          >
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+              <path
+                fill="none" stroke="currentColor" strokeWidth="1.4"
+                strokeLinecap="round" strokeLinejoin="round"
+                d="M8 5.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM13.5 8a5.6 5.6 0 0 0-.1-1l1.4-1-1.4-2.4-1.7.6a5.4 5.4 0 0 0-1.7-1L9.7.6H6.4l-.3 1.7a5.4 5.4 0 0 0-1.7 1l-1.7-.6L1.3 5.1l1.4 1a5.6 5.6 0 0 0 0 2L1.3 9l1.4 2.4 1.7-.6a5.4 5.4 0 0 0 1.7 1l.3 1.7h3.3l.3-1.7a5.4 5.4 0 0 0 1.7-1l1.7.6L14.7 9l-1.4-1a5.6 5.6 0 0 0 .1-1z"
+              />
+            </svg>
+            <span className="twk-pro-label">Advanced settings</span>
+            <span className="twk-pro-chev" aria-hidden="true">›</span>
+          </button>
         }
+        /* `credit` is rendered OUTSIDE .twk-body, pinned to the panel's
+           bottom edge regardless of the body's scroll position. Used
+           here for the "powered by Xafai" credit so it stays anchored
+           at the very bottom of the sidebar like a sticky footer. */
+        credit="powered by Xafai"
       >
         <TweakSection label="Size & bleed" />
         {/* Display-unit selector. Stored value stays in mm internally so

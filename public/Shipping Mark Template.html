@@ -617,6 +617,12 @@
   .twk-panel .twk-body {
     padding: 4px 16px 16px !important;
     scrollbar-color: rgba(157, 201, 232, 0.2) transparent !important;
+    /* Take up every available vertical pixel inside the flex-column
+       panel so the .twk-credit sibling below us naturally lands at
+       the bottom of the sidebar (no `margin-top: auto` gymnastics
+       needed inside the body). */
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
   }
   .twk-panel .twk-body::-webkit-scrollbar-thumb {
     background: rgba(157, 201, 232, 0.18) !important;
@@ -1152,26 +1158,23 @@
   }
   .adv-panel .twk-btn.secondary:hover { background: rgba(255, 255, 255, 0.12); }
 
-  .twk-footer {
-    /* `margin-top: auto` inside the flex-column .twk-body consumes
-       every leftover vertical pixel, pinning the credit to the
-       BOTTOM of the sidebar whenever sections are compact enough
-       that there's space to spare. When sections fill the panel and
-       the body scrolls, the auto margin collapses to 0 and the
-       credit appears naturally after the Advanced trigger button —
-       no weird overlap. The 10 px flex gap on .twk-body still
-       guarantees breathing room in the scroll case. */
-    margin-top: auto;
-    padding-top: 12px;
-    /* Faded divider + lighter text — the footer should read as a
-       quiet credit, not compete with the section menu rows above. */
-    border-top: 1px solid rgba(255, 255, 255, 0.03);
+  /* "powered by Xafai" credit — rendered by TweaksPanel inside a
+     .twk-credit wrapper that sits OUTSIDE .twk-body, anchored to the
+     panel's bottom edge. So it's truly a sticky footer: the body
+     above can scroll freely and the credit stays pinned at the very
+     bottom of the sidebar. */
+  .twk-panel .twk-credit {
+    flex-shrink: 0;
+    padding: 12px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    background: rgba(18, 19, 23, 0.65);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
     text-align: center;
-    font-size: 9.5px;
+    font: 400 9.5px/1 "Inter", "Roboto", system-ui, -apple-system, sans-serif;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: rgba(255, 255, 255, 0.20);
-    font-weight: 400;
   }
 
   /* ─── Welcome / sign-in overlay ─────────────────────────────────────
@@ -2004,19 +2007,19 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=41"></script>
-<script type="text/babel" src="auth.jsx?v=41"></script>
-<script type="text/babel" src="presets.jsx?v=41"></script>
-<script type="text/babel" src="activity.jsx?v=41"></script>
-<script type="text/babel" src="feedback.jsx?v=41"></script>
+<script type="text/babel" src="config.jsx?v=42"></script>
+<script type="text/babel" src="auth.jsx?v=42"></script>
+<script type="text/babel" src="presets.jsx?v=42"></script>
+<script type="text/babel" src="activity.jsx?v=42"></script>
+<script type="text/babel" src="feedback.jsx?v=42"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=41"></script>
-<script type="text/babel" src="icons.jsx?v=41"></script>
-<script type="text/babel" src="barcode.jsx?v=41"></script>
-<script type="text/babel" src="welcome.jsx?v=41"></script>
-<script type="text/babel" src="account-chip.jsx?v=41"></script>
-<script type="text/babel" src="presets-panel.jsx?v=41"></script>
-<script type="text/babel" src="app.jsx?v=41"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=42"></script>
+<script type="text/babel" src="icons.jsx?v=42"></script>
+<script type="text/babel" src="barcode.jsx?v=42"></script>
+<script type="text/babel" src="welcome.jsx?v=42"></script>
+<script type="text/babel" src="account-chip.jsx?v=42"></script>
+<script type="text/babel" src="presets-panel.jsx?v=42"></script>
+<script type="text/babel" src="app.jsx?v=42"></script>
 
 <style>
   #__standalone-tweaks-btn {
