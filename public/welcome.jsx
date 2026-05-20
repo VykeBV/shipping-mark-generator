@@ -141,6 +141,17 @@
               {busy ? "One moment…" : "Continue →"}
             </button>
 
+            {/* Marketing-consent line — kept tight and adjacent to the
+                CTA so it's seen BEFORE the click that constitutes
+                consent. Separate from the fineprint below (which is
+                about how the email is used for sign-in) so the
+                contact-permission scope reads as its own clear item. */}
+            <div className="vyke-welcome-consent">
+              By continuing you agree that Vyke may email you with
+              product updates and occasionally contact you about your
+              use of this demo.
+            </div>
+
             <div className="vyke-welcome-fineprint">
               No password. We use your email to remember your presets and
               recognise you when you come back.
