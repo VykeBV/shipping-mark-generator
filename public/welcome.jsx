@@ -66,11 +66,11 @@
             </div>
             <h1 className="vyke-welcome-title">Try the generator</h1>
             <p className="vyke-welcome-intro">
-              This is a <b>free public demo</b> of what Vyke can build — a
-              showcase, not a production tool. Generate print-ready shipping
-              mark PDFs with vector-precise EAN-13 barcodes and official ISO
-              7000 handling icons, and save your designs as presets so you
-              can pick them up next time.
+              Generate print-ready shipping mark PDFs with vector-precise
+              EAN-13 barcodes and official ISO 7000 handling icons, and save
+              your designs as presets so you can pick them up next time.
+              {" "}<b>Please note:</b> this tool is still under development.
+              Issues may occur, always double check all outputs.
             </p>
 
             <div className="vyke-welcome-pitch">
