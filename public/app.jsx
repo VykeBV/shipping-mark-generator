@@ -2273,8 +2273,12 @@ function App() {
             dimensions, per-icon size overrides. Used to live in a
             separate "pro" side-panel; now folded into the main
             sidebar as its own collapsible section so it sits with
-            every other setting (logical placement). */}
-        <TweakSection label="Advanced" />
+            every other setting (logical placement).
+            `variant="pro"` styles the section header as a distinct
+            blue-outlined button (the old `.twk-pro-trigger` look) so
+            it still reads as a separate "expert" affordance, sitting
+            at the bottom of the sidebar. */}
+        <TweakSection label="Advanced settings" variant="pro" />
         <div className="twk-sect" style={{ paddingTop: 0 }}>Row text size</div>
         <TweakSlider
           label="Text size"

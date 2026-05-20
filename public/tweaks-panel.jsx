@@ -304,7 +304,7 @@ function TweaksPanel({ title = 'Tweaks', noDeckControls = false, children }) {
               markers into collapsible groups. Items appearing before
               the first marker stay always-visible at the top. */}
           {groupChildrenByTweakSection(children).map((g, i) => (
-            <CollapsibleSection key={g.label || ('__pre_' + i)} label={g.label}>
+            <CollapsibleSection key={g.label || ('__pre_' + i)} label={g.label} variant={g.variant}>
               {g.items}
             </CollapsibleSection>
           ))}
@@ -341,7 +341,7 @@ function TweakSection({ label, children }) {
 // and chevron. Defaults open; remembers per-label state in
 // sessionStorage so the user's collapse choices persist while
 // they're navigating the editor.
-function CollapsibleSection({ label, defaultOpen = false, storageKey, children }) {
+function CollapsibleSection({ label, defaultOpen = false, storageKey, variant, children }) {
   const k = storageKey || ('twk-coll-' + (label || '').toLowerCase().replace(/\s+/g, '-'));
   const [open, setOpen] = React.useState(() => {
     try {
@@ -359,8 +359,12 @@ function CollapsibleSection({ label, defaultOpen = false, storageKey, children }
     });
   };
   if (label == null) return <>{children}</>;
+  // `variant` (e.g. "pro") adds a modifier class so callers can style
+  // a specific section's header differently — used for "Advanced" which
+  // wants the standalone-button look of the old .twk-pro-trigger.
+  const variantCls = variant ? ' twk-coll--' + variant : '';
   return (
-    <div className={'twk-coll' + (open ? ' is-open' : '')}>
+    <div className={'twk-coll' + (open ? ' is-open' : '') + variantCls}>
       <button
         type="button"
         className="twk-coll-hd"
@@ -394,7 +398,7 @@ function groupChildrenByTweakSection(children) {
         groups.push({ label: null, items: pre.slice() });
         pre = [];
       }
-      current = { label: node.props.label, items: [] };
+      current = { label: node.props.label, variant: node.props.variant, items: [] };
     } else if (current) {
       current.items.push(node);
     } else {

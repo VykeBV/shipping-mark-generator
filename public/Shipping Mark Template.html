@@ -681,6 +681,61 @@
     padding-top: 4px !important;
   }
 
+  /* ─── Pro variant ("Advanced") ───────────────────────────────────
+     Section flagged with variant="pro" — its header is restyled to
+     look like the old standalone .twk-pro-trigger button (outlined
+     blue card with a chevron) instead of the flat menu-row treatment
+     the other sections use. Visually marks Advanced as a separate
+     "expert" affordance while it still lives inline in the sidebar.
+     We override the .twk-coll edge-to-edge full-bleed wrapper so the
+     button sits with a comfortable margin around it. */
+  .twk-panel .twk-coll--pro {
+    margin: 14px 0 4px;
+    border: 0;
+    padding: 0 4px;
+  }
+  .twk-panel .twk-coll--pro + .twk-coll,
+  .twk-panel .twk-coll--pro:first-child { border-top: 0; }
+  .twk-panel .twk-coll--pro > .twk-coll-hd {
+    border-radius: 8px;
+    border: 1px solid rgba(157, 201, 232, 0.28);
+    background:
+      linear-gradient(180deg, rgba(157, 201, 232, 0.06), rgba(157, 201, 232, 0.02));
+    color: #9DC9E8;
+    font: 700 11px/1 "Inter", "Roboto", system-ui, sans-serif;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 11px 14px;
+    transition: background .14s ease, border-color .14s ease, color .14s ease;
+  }
+  .twk-panel .twk-coll--pro > .twk-coll-hd:hover {
+    background:
+      linear-gradient(180deg, rgba(157, 201, 232, 0.14), rgba(157, 201, 232, 0.06));
+    border-color: rgba(157, 201, 232, 0.55);
+    color: #BCE0F2;
+  }
+  .twk-panel .twk-coll--pro.is-open > .twk-coll-hd {
+    background:
+      linear-gradient(180deg, rgba(157, 201, 232, 0.22), rgba(157, 201, 232, 0.10));
+    border-color: #9DC9E8;
+    color: #fff;
+  }
+  /* Chevron sits to the right of the label, same orientation logic
+     (rotated -90° closed, 0° open) as the standard accordion. */
+  .twk-panel .twk-coll--pro > .twk-coll-hd .twk-coll-chev {
+    color: rgba(157, 201, 232, 0.7);
+  }
+  .twk-panel .twk-coll--pro.is-open > .twk-coll-hd .twk-coll-chev {
+    color: #fff;
+  }
+  /* Body of the pro section uses the standard inset treatment but
+     with no top border on the first sub-section (since the button
+     itself already provides a visual boundary). */
+  .twk-panel .twk-coll--pro > .twk-coll-body {
+    background: transparent;
+    padding: 10px 12px 14px;
+  }
+
   /* ─── Content rows table ───────────────────────────────────────────
      Compact inline editor for the row labels + values. One row per
      content row: [label input] [value input] [×] — easier to scan
@@ -1962,19 +2017,19 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=33"></script>
-<script type="text/babel" src="auth.jsx?v=33"></script>
-<script type="text/babel" src="presets.jsx?v=33"></script>
-<script type="text/babel" src="activity.jsx?v=33"></script>
-<script type="text/babel" src="feedback.jsx?v=33"></script>
+<script type="text/babel" src="config.jsx?v=34"></script>
+<script type="text/babel" src="auth.jsx?v=34"></script>
+<script type="text/babel" src="presets.jsx?v=34"></script>
+<script type="text/babel" src="activity.jsx?v=34"></script>
+<script type="text/babel" src="feedback.jsx?v=34"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=33"></script>
-<script type="text/babel" src="icons.jsx?v=33"></script>
-<script type="text/babel" src="barcode.jsx?v=33"></script>
-<script type="text/babel" src="welcome.jsx?v=33"></script>
-<script type="text/babel" src="account-chip.jsx?v=33"></script>
-<script type="text/babel" src="presets-panel.jsx?v=33"></script>
-<script type="text/babel" src="app.jsx?v=33"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=34"></script>
+<script type="text/babel" src="icons.jsx?v=34"></script>
+<script type="text/babel" src="barcode.jsx?v=34"></script>
+<script type="text/babel" src="welcome.jsx?v=34"></script>
+<script type="text/babel" src="account-chip.jsx?v=34"></script>
+<script type="text/babel" src="presets-panel.jsx?v=34"></script>
+<script type="text/babel" src="app.jsx?v=34"></script>
 
 <style>
   #__standalone-tweaks-btn {
