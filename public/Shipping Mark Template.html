@@ -2353,18 +2353,40 @@
     min-height: 0;
     flex-shrink: 0;
   }
+  /* Rows band is a flex ROW of columns. With 1 column (default,
+     content fits) it looks identical to before — single centred
+     column. With 2+ columns (overflow), they sit side-by-side with
+     a vertical divider between adjacent columns (border-left on
+     cols 2..N). The column-layout maths live in templates.jsx
+     (stackedColumnLayout) so the PDF render splits identically. */
   .sm-tpl-stacked .sm-s-rows {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.2mm;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: stretch;
     flex: 1 1 auto;
     min-height: 0;
     overflow: hidden;
   }
-  /* Centre each row's label + value pair inside the rows band. The
+  .sm-tpl-stacked .sm-s-rows-col {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2mm;
+    padding: 0 4mm;
+    min-width: 0;
+    overflow: hidden;
+  }
+  /* Vertical divider between adjacent columns. The 4 mm padding on
+     each column gives the rule breathing room on either side, so it
+     visually sits in the middle of an 8 mm gap. */
+  .sm-tpl-stacked .sm-s-rows-col + .sm-s-rows-col {
+    border-left: 0.25mm solid #000;
+  }
+  /* Centre each row's label + value pair inside its column. The
      base .sm-row uses flex-start by default. */
-  .sm-tpl-stacked .sm-s-rows .sm-row {
+  .sm-tpl-stacked .sm-s-rows-col .sm-row {
     justify-content: center;
     width: auto;
     max-width: 100%;
@@ -2455,23 +2477,23 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=57"></script>
-<script type="text/babel" src="auth.jsx?v=57"></script>
-<script type="text/babel" src="presets.jsx?v=57"></script>
-<script type="text/babel" src="activity.jsx?v=57"></script>
-<script type="text/babel" src="feedback.jsx?v=57"></script>
+<script type="text/babel" src="config.jsx?v=58"></script>
+<script type="text/babel" src="auth.jsx?v=58"></script>
+<script type="text/babel" src="presets.jsx?v=58"></script>
+<script type="text/babel" src="activity.jsx?v=58"></script>
+<script type="text/babel" src="feedback.jsx?v=58"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=57"></script>
-<script type="text/babel" src="icons.jsx?v=57"></script>
-<script type="text/babel" src="barcode.jsx?v=57"></script>
-<script type="text/babel" src="welcome.jsx?v=57"></script>
-<script type="text/babel" src="account-chip.jsx?v=57"></script>
-<script type="text/babel" src="presets-panel.jsx?v=57"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=58"></script>
+<script type="text/babel" src="icons.jsx?v=58"></script>
+<script type="text/babel" src="barcode.jsx?v=58"></script>
+<script type="text/babel" src="welcome.jsx?v=58"></script>
+<script type="text/babel" src="account-chip.jsx?v=58"></script>
+<script type="text/babel" src="presets-panel.jsx?v=58"></script>
 <!-- templates.jsx must load BEFORE app.jsx — app.jsx uses
      window.TEMPLATES / window.activeTemplate / window.TEMPLATE_LIST at
      render time. -->
-<script type="text/babel" src="templates.jsx?v=57"></script>
-<script type="text/babel" src="app.jsx?v=57"></script>
+<script type="text/babel" src="templates.jsx?v=58"></script>
+<script type="text/babel" src="app.jsx?v=58"></script>
 
 <style>
   #__standalone-tweaks-btn {

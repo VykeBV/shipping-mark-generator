@@ -776,6 +776,70 @@
     };
   }
 
+  // ───── Stacked row-column overflow helpers ─────────────────────────
+  // When the rows band can't fit every row vertically, we wrap them
+  // into N columns with a vertical divider between each. Both Preview
+  // and drawPdf use the same maths so they stay in lockstep.
+
+  // Total icons used (built-ins + custom uploads), derived from state
+  // — we don't have ICON_ORDER in this file, but state.icons carries
+  // a flag per icon key so a simple truthy-count works.
+  function enabledIconCount(state) {
+    return Object.values(state.icons || {}).filter(Boolean).length;
+  }
+
+  // Estimated icons-band height (mm) given the same packing rules
+  // CSS flex-wrap uses: as many icons as fit per row, then wrap.
+  function stackedIconsHeightEstMm(state) {
+    const count = enabledIconCount(state);
+    if (count === 0) return 0;
+    const sz = state.iconSizeMm || 14;
+    const g  = stackedGeometryMm(state);
+    const perRow = Math.max(1, Math.floor((g.innerW + STACKED.iconsGapH) / (sz + STACKED.iconsGapH)));
+    const rows   = Math.ceil(count / perRow);
+    return rows * sz + (rows - 1) * STACKED.iconsGapV;
+  }
+
+  // Available rows-band height in mm: card-minus-everything-else.
+  function stackedRowsAvailHeightMm(state) {
+    const g       = stackedGeometryMm(state);
+    const iconsH  = stackedIconsHeightEstMm(state);
+    const rule2Y  = g.iconsY0 + iconsH + STACKED.bandGap;
+    const rowsTop = rule2Y + STACKED.bandGap;
+    const rowsBot = g.barcodeY0 - STACKED.bandGap;
+    return Math.max(0, rowsBot - rowsTop);
+  }
+
+  // Split state.rows into N columns. Single column when everything
+  // fits vertically (preserves the current centred look). When it
+  // doesn't, perCol = how many rows fit in one column, and we chunk
+  // the rows array into ceil(N/perCol) columns.
+  // Returns column items with their ORIGINAL row index so the
+  // editor callbacks (setRow/removeRow) keep working after the split.
+  function stackedColumnLayout(state) {
+    const allRows = state.rows || [];
+    const rowSize = state.rowTextSizeMm || 2.6;
+    const rowH    = rowSize * 1.25 + 0.8;   // line + gap between rows
+    if (allRows.length === 0) {
+      return { columns: [[]], perCol: 0, colCount: 1, rowH, rowsAvailH: 0 };
+    }
+    const rowsAvailH = stackedRowsAvailHeightMm(state);
+    // +0.8 fudge: the last row has no trailing gap, so it fits if its
+    // line height alone fits in the remainder.
+    const perCol = Math.max(1, Math.floor((rowsAvailH + 0.8) / rowH));
+    const colCount = Math.max(1, Math.ceil(allRows.length / perCol));
+    const columns = [];
+    for (let c = 0; c < colCount; c++) {
+      const chunk = [];
+      const end = Math.min((c + 1) * perCol, allRows.length);
+      for (let i = c * perCol; i < end; i++) {
+        chunk.push({ row: allRows[i], index: i });
+      }
+      columns.push(chunk);
+    }
+    return { columns, perCol, colCount, rowH, rowsAvailH };
+  }
+
   const Stacked = {
     id:    "stacked",
     label: "Stacked",
@@ -862,37 +926,54 @@
           }),
         ),
         h("hr", { className: "sm-s-rule" }),
-        h("div", { className: "sm-s-rows" },
-          (t.rows || []).map((r, i) =>
-            h("div", { key: i, className: "sm-row" },
-              h(Editable, {
-                className: "sm-row-label",
-                value: r.label,
-                onChange: (v) => setRow(i, { ...r, label: v }),
-                placeholder: "Label",
-              }),
-              h(Editable, {
-                className: "sm-row-value",
-                value: r.value,
-                onChange: (v) => setRow(i, { ...r, value: v }),
-                placeholder: "Value",
-              }),
-              h("button", {
-                className: "sm-row-remove",
-                onClick: () => removeRow(i),
-                title: "Remove row",
-              }, "×"),
+        // Rows band: split into N columns when content overflows
+        // vertically; vertical divider rendered via border-left on
+        // cols 2..N (see .sm-tpl-stacked .sm-s-rows-col CSS).
+        (() => {
+          const layout = stackedColumnLayout(t);
+          return h("div", {
+              className: "sm-s-rows",
+              "data-cols": layout.colCount,
+            },
+            layout.columns.map((colItems, ci) =>
+              h("div", { key: ci, className: "sm-s-rows-col" },
+                colItems.map(({ row: r, index: i }) =>
+                  h("div", { key: i, className: "sm-row" },
+                    h(Editable, {
+                      className: "sm-row-label",
+                      value: r.label,
+                      onChange: (v) => setRow(i, { ...r, label: v }),
+                      placeholder: "Label",
+                    }),
+                    h(Editable, {
+                      className: "sm-row-value",
+                      value: r.value,
+                      onChange: (v) => setRow(i, { ...r, value: v }),
+                      placeholder: "Value",
+                    }),
+                    h("button", {
+                      className: "sm-row-remove",
+                      onClick: () => removeRow(i),
+                      title: "Remove row",
+                    }, "×"),
+                  ),
+                ),
+                // Add-row button only in the LAST column so it doesn't
+                // duplicate visually. Clicking it appends to state.rows
+                // and the column layout recomputes on the next render —
+                // the new row appears in whichever column has room.
+                ci === layout.columns.length - 1 && h("button", {
+                  className: "sm-row-add",
+                  onClick: addRow,
+                  disabled: rowAddBlocked,
+                  title: rowAddBlocked
+                    ? "No more room — make the card taller or remove a row first."
+                    : "Add a row",
+                }, "+ Add row"),
+              ),
             ),
-          ),
-          h("button", {
-            className: "sm-row-add",
-            onClick: addRow,
-            disabled: rowAddBlocked,
-            title: rowAddBlocked
-              ? "No more room — make the card taller or remove a row first."
-              : "Add a row",
-          }, "+ Add row"),
-        ),
+          );
+        })(),
         h("div", { className: "sm-barcode sm-s-barcode" },
           h(BarcodeView, {
             digits: t.ean13,
@@ -1028,38 +1109,58 @@
       pdf.line(trimX + STACKED.padX, trimY + (rule2Y - trimY),
                trimX + W - STACKED.padX, trimY + (rule2Y - trimY));
 
-      // 5. Rows — each row centred horizontally. We measure
-      //    label + value text widths per row to centre each.
+      // 5. Rows — split into N columns when they don't fit vertically.
+      //    Each row centred within its column; vertical divider drawn
+      //    between adjacent columns. Same column layout as Preview
+      //    (stackedColumnLayout), so what you see is what exports.
       const rowSizeMm = state.rowTextSizeMm || 2.6;
       const rowGapMm  = 0.8;
       const rowLineH  = rowSizeMm * 1.25;
       const labelValueGap = 1.5;
       setBlackText();
       pdf.setFontSize(rowSizeMm * 2.83465);
-      let rowY = rule2Y + STACKED.bandGap + rowSizeMm * 0.85;
-      const rowsBottomLimit = trimY + g.barcodeY0 - STACKED.bandGap;
-      const rows = state.rows || [];
-      rows.forEach(r => {
-        if (!r.label && !r.value) return;
-        if (rowY > rowsBottomLimit) return;  // out of room — preview shows overflow warning
-        pdf.setFont("Helvetica", "bold");
-        const labelText = r.label ? r.label + ":" : "";
-        const labelW = labelText ? pdf.getTextWidth(labelText) : 0;
-        pdf.setFont("Helvetica", "normal");
-        const valueW = r.value ? pdf.getTextWidth(r.value) : 0;
-        const lineGap = (labelW > 0 && valueW > 0) ? labelValueGap : 0;
-        const totalW = labelW + lineGap + valueW;
-        const startX = trimX + (W - totalW) / 2;
-        if (labelText) {
+      const rowsTopBaselineY = rule2Y + STACKED.bandGap + rowSizeMm * 0.85;
+      const rowsBottomY      = trimY + g.barcodeY0 - STACKED.bandGap;
+      const layout = stackedColumnLayout(state);
+      const innerW = W - STACKED.padX * 2;
+      const colW = innerW / layout.colCount;
+      for (let ci = 0; ci < layout.columns.length; ci++) {
+        const colLeftX   = trimX + STACKED.padX + ci * colW;
+        const colCenterX = colLeftX + colW / 2;
+        let rowY = rowsTopBaselineY;
+        for (const { row: r } of layout.columns[ci]) {
+          if (!r.label && !r.value) {
+            rowY += rowLineH + rowGapMm;
+            continue;
+          }
+          if (rowY > rowsBottomY) break;  // overflow — preview warning catches it
           pdf.setFont("Helvetica", "bold");
-          pdf.text(labelText, startX, rowY);
-        }
-        if (r.value) {
+          const labelText = r.label ? r.label + ":" : "";
+          const labelW = labelText ? pdf.getTextWidth(labelText) : 0;
           pdf.setFont("Helvetica", "normal");
-          pdf.text(r.value, startX + labelW + lineGap, rowY);
+          const valueW = r.value ? pdf.getTextWidth(r.value) : 0;
+          const lineGap = (labelW > 0 && valueW > 0) ? labelValueGap : 0;
+          const totalW = labelW + lineGap + valueW;
+          const startX = colCenterX - totalW / 2;
+          if (labelText) {
+            pdf.setFont("Helvetica", "bold");
+            pdf.text(labelText, startX, rowY);
+          }
+          if (r.value) {
+            pdf.setFont("Helvetica", "normal");
+            pdf.text(r.value, startX + labelW + lineGap, rowY);
+          }
+          rowY += rowLineH + rowGapMm;
         }
-        rowY += rowLineH + rowGapMm;
-      });
+        // Vertical divider between this column and the next
+        if (ci < layout.colCount - 1) {
+          const dividerX = colLeftX + colW;
+          pdf.setLineWidth(STACKED.rule);
+          setBlackStroke();
+          pdf.line(dividerX, rule2Y + STACKED.bandGap,
+                   dividerX, rowsBottomY);
+        }
+      }
 
       // 6. Barcode — centred horizontally at the bottom
       const eanNorm = window.BARCODE.normalizeEan13(state.ean13);
