@@ -384,11 +384,22 @@
     footerHPad:   3,      // extra mm above + below the barcode in the footer
     cellPadX:     4,      // horizontal padding inside each cell
     cellPadY:     3,      // vertical padding inside each cell
-    rowsCellFrac: 0.60,   // left cell takes 60% of inner width
+    iconsGap:     2,      // gap between icons in the cell
+    iconsCellMinW:    25, // never let icons cell shrink below this
+    iconsCellMaxFrac: 0.55, // never let it exceed this fraction of innerW
+    iconsEmptyCellW:  30, // narrow placeholder cell when no icons enabled
   };
 
   // Compute the Ruled geometry — used by both Preview (via CSS
   // variables) and drawPdf so they stay in lockstep.
+  //
+  // The icons cell width is CONTENT-AWARE: we figure out how many
+  // icon rows fit in the body's vertical space, derive the
+  // column count needed (ceil(iconCount / rowsThatFit)), then size
+  // the cell wide enough to hold that many columns. The rows cell
+  // takes whatever's left. Result: more icons or shorter cards →
+  // wider icons cell (more columns); fewer icons or taller cards →
+  // narrower icons cell (rows cell gets the slack).
   function ruledGeometryMm(state) {
     const W = state.widthMm || 130;
     const H = state.heightMm || 90;
@@ -397,8 +408,29 @@
     const bodyTopY    = RULED.frame + RULED.headerH;
     const bodyBottomY = H - RULED.frame - footerH;
     const bodyH       = Math.max(0, bodyBottomY - bodyTopY);
-    const rowsCellW   = innerW * RULED.rowsCellFrac;
-    const iconsCellW  = innerW - rowsCellW;
+
+    // Content-aware icons cell width
+    const iconSize  = state.iconSizeMm || 14;
+    const cellInnerH = Math.max(0, bodyH - RULED.cellPadY * 2);
+    const iconCount = enabledIconCount(state);
+    let iconsCellW;
+    if (iconCount === 0) {
+      iconsCellW = RULED.iconsEmptyCellW;
+    } else {
+      // Rows that fit vertically at this icon size:
+      const rowsThatFit = Math.max(1,
+        Math.floor((cellInnerH + RULED.iconsGap) / (iconSize + RULED.iconsGap)));
+      // Columns needed to fit every icon given that vertical capacity:
+      const colsNeeded = Math.max(1, Math.ceil(iconCount / rowsThatFit));
+      // Width to hold that many icon columns (with gaps + cell padding):
+      const idealW = colsNeeded * iconSize
+                   + (colsNeeded - 1) * RULED.iconsGap
+                   + RULED.cellPadX * 2;
+      iconsCellW = Math.max(RULED.iconsCellMinW,
+                            Math.min(idealW, innerW * RULED.iconsCellMaxFrac));
+    }
+    const rowsCellW = Math.max(0, innerW - iconsCellW);
+
     return {
       W, H, innerW, footerH, bodyTopY, bodyBottomY, bodyH,
       rowsCellW, iconsCellW,
