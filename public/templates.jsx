@@ -917,6 +917,25 @@
       };
     },
 
+    // Stacked rows wrap into columns when they overflow vertically,
+    // so the standard "vertical fit" check (Classic/Ruled) is the
+    // wrong question here. Instead: would adding one more row push
+    // the column count past what fits horizontally?
+    canAddRow(state) {
+      const layout = stackedColumnLayout(state);
+      const next   = (state.rows || []).length + 1;
+      const perCol = layout.perCol || 1;
+      if (perCol <= 0) return false;
+      const colCountAfter = Math.ceil(next / perCol);
+      const g = stackedGeometryMm(state);
+      // Minimum useful column width — 8 mm padding + ~14 mm content
+      // (a label like "Country" at default 2.6 mm text is ~13 mm wide).
+      // Below this, rows would clip; that's the horizontal cap.
+      const MIN_COL_W = 22;
+      const maxCols   = Math.max(1, Math.floor(g.innerW / MIN_COL_W));
+      return colCountAfter <= maxCols;
+    },
+
     Preview({ state, ctx }) {
       const { BrandLogo, Editable, BarcodeView,
               setTweak, setRow, removeRow, addRow,

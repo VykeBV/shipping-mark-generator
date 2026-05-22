@@ -185,8 +185,14 @@ function rowsOverflow(rowCount, state) {
   return rowsBlockHeightMm(rowCount, state) > availH + 0.01;
 }
 
-// True when adding one MORE row would NOT overflow.
+// True when adding one MORE row would NOT overflow. Templates can
+// override this for layouts where the "fit" rule differs from the
+// default vertical check — e.g. Stacked wraps rows into columns
+// when they overflow vertically, so the standard check returns
+// false too early.
 function canAddRow(state) {
+  const tpl = window.activeTemplate ? window.activeTemplate(state) : null;
+  if (tpl && typeof tpl.canAddRow === "function") return tpl.canAddRow(state);
   const current = (state.rows || []).length;
   return !rowsOverflow(current + 1, state);
 }
