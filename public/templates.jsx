@@ -368,33 +368,65 @@
   // Thumbnail visual language. `available: false` greys them in the
   // picker and disables selection. Selecting them is a no-op until
   // their Preview + drawPdf land.
+  // ───── Ruled template ──────────────────────────────────────────────
+  // Boxed carton-label look. Thin outer frame; header band with a rule
+  // under it; body split into a rows cell (60% of inner width) and an
+  // icons cell (40%) by a vertical rule; barcode in its own ruled
+  // bottom band, right-aligned. Industrial / traditional.
+  //
+  // All measurements in mm. The CSS layout (.sm-tpl-ruled in the
+  // HTML) and the drawPdf coordinates use the same constants so
+  // preview and PDF stay locked together.
+  const RULED = {
+    frame:        0.30,   // outer-frame stroke (mm)
+    rule:         0.25,   // internal divider strokes
+    headerH:      11,     // header band height
+    footerHPad:   3,      // extra mm above + below the barcode in the footer
+    cellPadX:     4,      // horizontal padding inside each cell
+    cellPadY:     3,      // vertical padding inside each cell
+    rowsCellFrac: 0.60,   // left cell takes 60% of inner width
+  };
+
+  // Compute the Ruled geometry — used by both Preview (via CSS
+  // variables) and drawPdf so they stay in lockstep.
+  function ruledGeometryMm(state) {
+    const W = state.widthMm || 130;
+    const H = state.heightMm || 90;
+    const innerW = W - RULED.frame * 2;
+    const footerH = (state.barcodeHeightMm || 20) + 3.5 + RULED.footerHPad * 2;
+    const bodyTopY    = RULED.frame + RULED.headerH;
+    const bodyBottomY = H - RULED.frame - footerH;
+    const bodyH       = Math.max(0, bodyBottomY - bodyTopY);
+    const rowsCellW   = innerW * RULED.rowsCellFrac;
+    const iconsCellW  = innerW - rowsCellW;
+    return {
+      W, H, innerW, footerH, bodyTopY, bodyBottomY, bodyH,
+      rowsCellW, iconsCellW,
+      iconsCellX: RULED.frame + rowsCellW,   // x of the vertical divider
+      footerY:    H - RULED.frame - footerH, // y of the footer rule
+    };
+  }
+
   const Ruled = {
     id:    "ruled",
     label: "Ruled",
-    blurb: "Bordered, ruled grid of boxes — coming soon.",
-    available: false,
+    blurb: "Bordered, ruled grid of boxes — industrial carton-label look.",
+    available: true,
+
     Thumbnail() {
       return h("svg", { viewBox: "0 0 60 42", "aria-hidden": "true" },
-        // outer frame
         h("rect", { x: 1, y: 1, width: 58, height: 40, rx: 2,
                     fill: "none", stroke: "currentColor", strokeWidth: 1.2 }),
-        // header rule
         h("line", { x1: 1, y1: 11, x2: 59, y2: 11, stroke: "currentColor", strokeWidth: 0.7 }),
-        // vertical body divider
         h("line", { x1: 36, y1: 11, x2: 36, y2: 32, stroke: "currentColor", strokeWidth: 0.7 }),
-        // bottom rule
         h("line", { x1: 1, y1: 32, x2: 59, y2: 32, stroke: "currentColor", strokeWidth: 0.7 }),
-        // brand mark
         h("rect", { x: 5, y: 5, width: 14, height: 3, fill: "currentColor", opacity: 0.85 }),
-        // rows
         h("rect", { x: 5, y: 16, width: 22, height: 1.4, fill: "currentColor", opacity: 0.55 }),
         h("rect", { x: 5, y: 20, width: 18, height: 1.4, fill: "currentColor", opacity: 0.55 }),
         h("rect", { x: 5, y: 24, width: 20, height: 1.4, fill: "currentColor", opacity: 0.55 }),
-        // icons cells
         h("rect", { x: 40, y: 14, width: 6, height: 6, fill: "currentColor", opacity: 0.7 }),
         h("rect", { x: 48, y: 14, width: 6, height: 6, fill: "currentColor", opacity: 0.7 }),
         h("rect", { x: 40, y: 22, width: 6, height: 6, fill: "currentColor", opacity: 0.7 }),
-        // barcode hint at bottom
         h("g", { transform: "translate(36, 35)" },
           h("rect", { width: 1, height: 4, fill: "currentColor" }),
           h("rect", { x: 2, width: 1.5, height: 4, fill: "currentColor" }),
@@ -409,9 +441,293 @@
         ),
       );
     },
-    iconsRegionMm: Classic.iconsRegionMm, // placeholder until built
-    Preview: Classic.Preview,             // fall back to Classic if accidentally selected
-    drawPdf: Classic.drawPdf,
+
+    // Icons region = the right cell of the body, minus its padding.
+    // Used for icon packing + overflow detection.
+    iconsRegionMm(state) {
+      const g = ruledGeometryMm(state);
+      return {
+        availH: Math.max(0, g.bodyH - RULED.cellPadY * 2),
+        availW: Math.max(0, g.iconsCellW - RULED.cellPadX * 2),
+      };
+    },
+
+    Preview({ state, ctx }) {
+      const { BrandLogo, Editable, BarcodeView,
+              setTweak, setRow, removeRow, addRow,
+              rowAddBlocked, enabledIcons, sizeFor, getIconMeta } = ctx;
+      const t = state;
+      const g = ruledGeometryMm(t);
+      // Push the Ruled geometry into CSS variables so the .sm-tpl-ruled
+      // rules can size cells in mm exactly matching the PDF render.
+      const style = {
+        "--ruled-header-h-mm":  RULED.headerH,
+        "--ruled-footer-h-mm":  g.footerH,
+        "--ruled-rows-w-mm":    g.rowsCellW,
+        "--ruled-icons-w-mm":   g.iconsCellW,
+        "--ruled-frame-mm":     RULED.frame,
+        "--ruled-rule-mm":      RULED.rule,
+        "--ruled-cell-pad-x-mm": RULED.cellPadX,
+        "--ruled-cell-pad-y-mm": RULED.cellPadY,
+      };
+      return h("div", { className: "sm-trim sm-tpl-ruled", style },
+        h("div", { className: "sm-r-header" },
+          h(BrandLogo, { src: t.brandLogo, bw: t.brandLogoBw }),
+          h(Editable, {
+            className: "sm-brand",
+            value: t.brandName,
+            onChange: (v) => setTweak("brandName", v),
+            placeholder: "BRAND",
+          }),
+        ),
+        h("div", { className: "sm-r-body" },
+          h("div", { className: "sm-r-rows" },
+            (t.rows || []).map((r, i) =>
+              h("div", { key: i, className: "sm-row" },
+                h(Editable, {
+                  className: "sm-row-label",
+                  value: r.label,
+                  onChange: (v) => setRow(i, { ...r, label: v }),
+                  placeholder: "Label",
+                }),
+                h(Editable, {
+                  className: "sm-row-value",
+                  value: r.value,
+                  onChange: (v) => setRow(i, { ...r, value: v }),
+                  placeholder: "Value",
+                }),
+                h("button", {
+                  className: "sm-row-remove",
+                  onClick: () => removeRow(i),
+                  title: "Remove row",
+                }, "×"),
+              ),
+            ),
+            h("button", {
+              className: "sm-row-add",
+              onClick: addRow,
+              disabled: rowAddBlocked,
+              title: rowAddBlocked
+                ? "No more room — make the card taller or remove a row first."
+                : "Add a row",
+            }, "+ Add row"),
+          ),
+          h("div", { className: "sm-r-icons" },
+            enabledIcons.map((k) => {
+              const meta = getIconMeta(k, t.customIcons);
+              if (!meta) return null;
+              const sz = sizeFor(k, t);
+              return h("div", {
+                key: k,
+                className: "sm-icon",
+                "data-key": k,
+                title: `${meta.label} (${sz}mm)`,
+                style: { width: `${sz}mm`, height: `${sz}mm` },
+              },
+                meta.svg
+                  ? meta.svg
+                  : h("span", {
+                      style: { width: "100%", height: "100%", display: "grid", placeItems: "center" },
+                      dangerouslySetInnerHTML: { __html: meta.svgString || "" },
+                    }),
+              );
+            }),
+          ),
+        ),
+        h("div", { className: "sm-r-footer" },
+          // Reuses the .sm-barcode class but Ruled CSS overrides
+          // its absolute positioning so the SVG sits naturally
+          // inside the right-aligned footer cell.
+          h("div", { className: "sm-barcode sm-r-barcode" },
+            h(BarcodeView, {
+              digits: t.ean13,
+              heightMm: t.barcodeHeightMm,
+              xDimMm: t.barcodeXDimMm,
+            }),
+          ),
+        ),
+      );
+    },
+
+    async drawPdf(pdf, state, ctx) {
+      const { logoToBlackPng, packIcons, ICON_ORDER } = ctx;
+      const W = state.widthMm, H = state.heightMm, B = state.bleedMm || 0;
+      const trimX = B, trimY = B;
+      const setBlackText   = () => pdf.setTextColor(0, 0, 0, 1);
+      const setBlackStroke = () => pdf.setDrawColor(0, 0, 0, 1);
+
+      const g = ruledGeometryMm(state);
+
+      // 1. Outer frame
+      setBlackStroke();
+      pdf.setLineWidth(RULED.frame);
+      pdf.rect(trimX + RULED.frame / 2, trimY + RULED.frame / 2,
+               W - RULED.frame, H - RULED.frame);
+
+      // 2. Header bottom rule + footer top rule + vertical body divider
+      pdf.setLineWidth(RULED.rule);
+      // header rule
+      pdf.line(trimX + RULED.frame,     trimY + g.bodyTopY,
+               trimX + W - RULED.frame, trimY + g.bodyTopY);
+      // footer rule
+      pdf.line(trimX + RULED.frame,     trimY + g.footerY,
+               trimX + W - RULED.frame, trimY + g.footerY);
+      // vertical divider between rows + icons cells
+      pdf.line(trimX + g.iconsCellX, trimY + g.bodyTopY,
+               trimX + g.iconsCellX, trimY + g.footerY);
+
+      // 3. Header cell — logo (left) + brand name (right of logo).
+      //    Centred vertically inside the header band.
+      const headerInnerY = trimY + RULED.frame;
+      const headerInnerH = g.bodyTopY - RULED.frame * 2;
+      let brandLeftX = trimX + RULED.frame + RULED.cellPadX;
+      if (state.brandLogo) {
+        try {
+          const src = state.brandLogoBw ? await logoToBlackPng(state.brandLogo) : state.brandLogo;
+          const probe = await new Promise((res, rej) => {
+            const im = new Image();
+            im.onload = () => res({ w: im.naturalWidth, h: im.naturalHeight });
+            im.onerror = rej;
+            im.src = src;
+          });
+          const aspect = probe.w / probe.h;
+          const LOGO_MAX_H = Math.min(8, headerInnerH);
+          const LOGO_MAX_W = 30;
+          let lh = LOGO_MAX_H, lw = lh * aspect;
+          if (lw > LOGO_MAX_W) { lw = LOGO_MAX_W; lh = lw / aspect; }
+          const logoY = headerInnerY + (headerInnerH - lh) / 2;
+          pdf.addImage(src, "PNG", brandLeftX, logoY, lw, lh, undefined, "FAST");
+          brandLeftX += lw + 3;
+        } catch (e) {
+          console.warn("Logo embed failed:", e);
+        }
+      }
+      if (state.brandName) {
+        setBlackText();
+        pdf.setFont("Helvetica", "bold");
+        const sizeMm = 4.2;
+        pdf.setFontSize(sizeMm * 2.83465);
+        const baseY = headerInnerY + headerInnerH / 2 + sizeMm * 0.32;
+        pdf.text(state.brandName, brandLeftX, baseY);
+      }
+
+      // 4. Rows cell — text rows inside the left body cell.
+      const rowsX0 = trimX + RULED.frame + RULED.cellPadX;
+      const rowsY0 = trimY + g.bodyTopY + RULED.cellPadY;
+      const rowsXLimit = trimX + g.iconsCellX - RULED.cellPadX;
+      const rowSizeMm = state.rowTextSizeMm || 2.6;
+      const rowGapMm  = 0.8;
+      const rowLineH  = rowSizeMm * 1.25;
+      setBlackText();
+      pdf.setFontSize(rowSizeMm * 2.83465);
+      let rowY = rowsY0 + rowSizeMm * 0.85;
+      const rows = state.rows || [];
+      pdf.setFont("Helvetica", "bold");
+      let maxLabelW = 0;
+      rows.forEach(r => {
+        if (!r.label) return;
+        const w = pdf.getTextWidth(r.label + ":");
+        if (w > maxLabelW) maxLabelW = w;
+      });
+      const valueX = rowsX0 + maxLabelW + 1.5;
+      rows.forEach(r => {
+        if (!r.label && !r.value) return;
+        pdf.setFont("Helvetica", "bold");
+        if (r.label) pdf.text(r.label + ":", rowsX0, rowY);
+        pdf.setFont("Helvetica", "normal");
+        if (r.value) {
+          const maxW = Math.max(10, rowsXLimit - valueX);
+          const lines = pdf.splitTextToSize(r.value, maxW);
+          pdf.text(lines, valueX, rowY);
+          rowY += (lines.length - 1) * rowLineH;
+        }
+        rowY += rowLineH + rowGapMm;
+      });
+
+      // 5. Icons cell — same svg2pdf approach as Classic but packed
+      //    into the right cell instead of the right edge of body.
+      const enabledIcons = [
+        ...ICON_ORDER.filter(k => state.icons && state.icons[k]),
+        ...(state.customIcons || []).filter(c => state.icons && state.icons[c.key]).map(c => c.key),
+      ];
+      if (enabledIcons.length && typeof pdf.svg === "function") {
+        const ICON_GAP = 2;
+        const region = Ruled.iconsRegionMm(state);
+        const packed = packIcons(enabledIcons, state, ICON_GAP, region.availW);
+        const card = document.querySelector(".shipping-mark");
+        const svgByKey = {};
+        if (card) {
+          card.querySelectorAll(".sm-icon[data-key]").forEach(el => {
+            const key = el.getAttribute("data-key");
+            const svg = el.querySelector("svg");
+            if (key && svg) svgByKey[key] = svg;
+          });
+        }
+        const iconsX0 = trimX + g.iconsCellX + RULED.cellPadX;
+        const iconsY0 = trimY + g.bodyTopY + RULED.cellPadY;
+        for (const { key, x, y, sz } of packed.placements) {
+          const src = svgByKey[key];
+          if (!src) continue;
+          const cloned = src.cloneNode(true);
+          cloned.querySelectorAll("[fill]").forEach((el) => {
+            const f = el.getAttribute("fill");
+            if (f === "currentColor") el.setAttribute("fill", "#000");
+          });
+          cloned.querySelectorAll("[stroke]").forEach((el) => {
+            const s = el.getAttribute("stroke");
+            if (s === "currentColor") el.setAttribute("stroke", "#000");
+          });
+          const holder = document.createElement("div");
+          holder.style.cssText = "position:absolute;left:-99999px;top:-99999px;pointer-events:none;";
+          holder.appendChild(cloned);
+          document.body.appendChild(holder);
+          try {
+            await pdf.svg(cloned, {
+              x: iconsX0 + x,
+              y: iconsY0 + y,
+              width: sz,
+              height: sz,
+            });
+          } catch (err) {
+            console.warn("Icon", key, "failed to render via svg2pdf:", err);
+          } finally {
+            document.body.removeChild(holder);
+          }
+        }
+      }
+
+      // 6. Crop marks (corner ticks in the bleed)
+      if (state.showCropMarks && B > 0) {
+        setBlackStroke();
+        pdf.setLineWidth(0.15);
+        const tick = Math.min(3, B);
+        const draw = (x, y, dx, dy) => pdf.line(x, y, x + dx, y + dy);
+        draw(trimX - tick, trimY,           tick - 0.5, 0);
+        draw(trimX,        trimY - tick,    0, tick - 0.5);
+        draw(trimX + W + 0.5, trimY,        tick - 0.5, 0);
+        draw(trimX + W,    trimY - tick,    0, tick - 0.5);
+        draw(trimX - tick, trimY + H,       tick - 0.5, 0);
+        draw(trimX,        trimY + H + 0.5, 0, tick - 0.5);
+        draw(trimX + W + 0.5, trimY + H,    tick - 0.5, 0);
+        draw(trimX + W,    trimY + H + 0.5, 0, tick - 0.5);
+      }
+
+      // 7. Barcode — right-aligned in footer cell, last so nothing overlaps it
+      const eanNorm = window.BARCODE.normalizeEan13(state.ean13);
+      if (eanNorm.ok) {
+        const eanW = window.BARCODE.widthMm({ xDimMm: state.barcodeXDimMm });
+        const barcodeX = trimX + W - RULED.frame - RULED.cellPadX - eanW;
+        const barcodeY = trimY + g.footerY + RULED.footerHPad;
+        await window.BARCODE.drawToPdf(pdf, {
+          digits: eanNorm.digits,
+          x: barcodeX,
+          y: barcodeY,
+          xDimMm: state.barcodeXDimMm,
+          heightMm: state.barcodeHeightMm,
+          includeText: true,
+        });
+      }
+    },
   };
 
   const Stacked = {
