@@ -2311,6 +2311,75 @@
     bottom: auto;
   }
 
+  /* ─── Stacked template (.sm-tpl-stacked) ─────────────────────────
+     Centred horizontal bands — modern poster look. Brand centred at
+     top, divider rule, icons strip centred (icons-forward), divider
+     rule, rows centred, barcode centred at the bottom. Each band
+     sizes to content; the rows band fills the remaining space. */
+  .sm-trim.sm-tpl-stacked {
+    padding: 5mm 5mm;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5mm;
+    align-items: stretch;
+  }
+  .sm-tpl-stacked .sm-s-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3mm;
+    min-height: 12mm;
+    flex-shrink: 0;
+  }
+  /* Make the brand name slightly larger in Stacked since it's the
+     focal point of the top band. Doesn't affect the other templates. */
+  .sm-tpl-stacked .sm-brand {
+    font-size: 4.6mm;
+    text-align: center;
+  }
+  .sm-tpl-stacked .sm-s-rule {
+    margin: 0;
+    border: 0;
+    border-top: 0.25mm solid #000;
+    height: 0;
+    flex-shrink: 0;
+  }
+  .sm-tpl-stacked .sm-s-icons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 2mm;
+    min-height: 0;
+    flex-shrink: 0;
+  }
+  .sm-tpl-stacked .sm-s-rows {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2mm;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+  /* Centre each row's label + value pair inside the rows band. The
+     base .sm-row uses flex-start by default. */
+  .sm-tpl-stacked .sm-s-rows .sm-row {
+    justify-content: center;
+    width: auto;
+    max-width: 100%;
+  }
+  /* Barcode at the bottom, centred. Override Classic's absolute
+     positioning the same way Ruled does. */
+  .sm-tpl-stacked .sm-s-barcode {
+    position: static;
+    right: auto;
+    bottom: auto;
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
   /* ─── Editable text ───────────────────────────────────────────── */
   .editable {
     outline: none;
@@ -2386,23 +2455,23 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=56"></script>
-<script type="text/babel" src="auth.jsx?v=56"></script>
-<script type="text/babel" src="presets.jsx?v=56"></script>
-<script type="text/babel" src="activity.jsx?v=56"></script>
-<script type="text/babel" src="feedback.jsx?v=56"></script>
+<script type="text/babel" src="config.jsx?v=57"></script>
+<script type="text/babel" src="auth.jsx?v=57"></script>
+<script type="text/babel" src="presets.jsx?v=57"></script>
+<script type="text/babel" src="activity.jsx?v=57"></script>
+<script type="text/babel" src="feedback.jsx?v=57"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=56"></script>
-<script type="text/babel" src="icons.jsx?v=56"></script>
-<script type="text/babel" src="barcode.jsx?v=56"></script>
-<script type="text/babel" src="welcome.jsx?v=56"></script>
-<script type="text/babel" src="account-chip.jsx?v=56"></script>
-<script type="text/babel" src="presets-panel.jsx?v=56"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=57"></script>
+<script type="text/babel" src="icons.jsx?v=57"></script>
+<script type="text/babel" src="barcode.jsx?v=57"></script>
+<script type="text/babel" src="welcome.jsx?v=57"></script>
+<script type="text/babel" src="account-chip.jsx?v=57"></script>
+<script type="text/babel" src="presets-panel.jsx?v=57"></script>
 <!-- templates.jsx must load BEFORE app.jsx — app.jsx uses
      window.TEMPLATES / window.activeTemplate / window.TEMPLATE_LIST at
      render time. -->
-<script type="text/babel" src="templates.jsx?v=56"></script>
-<script type="text/babel" src="app.jsx?v=56"></script>
+<script type="text/babel" src="templates.jsx?v=57"></script>
+<script type="text/babel" src="app.jsx?v=57"></script>
 
 <style>
   #__standalone-tweaks-btn {

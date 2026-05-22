@@ -730,30 +730,71 @@
     },
   };
 
+  // ───── Stacked template ────────────────────────────────────────────
+  // Centred horizontal bands — modern poster look. Brand centred at
+  // top, thin divider rule, handling icons as a centred strip (gets
+  // prominence), thin divider rule, content rows centred, barcode
+  // centred at the bottom. Icons-forward, full-width treatment.
+  const STACKED = {
+    padX:       5,    // outer padding (mm)
+    padY:       5,
+    brandH:     12,   // brand band height
+    bandGap:    2.5,  // gap above/below each divider rule
+    rule:       0.25, // divider stroke
+    iconsGapH:  2,    // horizontal gap between icons in the strip
+    iconsGapV:  2,    // vertical gap when icons wrap to multiple rows
+  };
+
+  function stackedGeometryMm(state) {
+    const W = state.widthMm  || 130;
+    const H = state.heightMm || 90;
+    const innerW = W - STACKED.padX * 2;
+    // Vertical bands (y from 0 at trim top, mm):
+    //   padY
+    //   brandBand (height brandH)
+    //   bandGap
+    //   rule 1
+    //   bandGap
+    //   iconsBand (auto height, computed from wrap)
+    //   bandGap
+    //   rule 2
+    //   bandGap
+    //   rowsBand (auto height)
+    //   barcode (auto height)
+    //   padY
+    const brandY0    = STACKED.padY;
+    const brandY1    = brandY0 + STACKED.brandH;
+    const rule1Y     = brandY1 + STACKED.bandGap;
+    const iconsY0    = rule1Y  + STACKED.bandGap;
+    // Barcode anchored at bottom. Footer height includes HRI digits (~3.5 mm).
+    const barcodeH   = (state.barcodeHeightMm || 20) + 3.5;
+    const barcodeY1  = H - STACKED.padY;
+    const barcodeY0  = barcodeY1 - barcodeH;
+    return {
+      W, H, innerW, brandY0, brandY1, rule1Y, iconsY0,
+      barcodeY0, barcodeY1, barcodeH,
+    };
+  }
+
   const Stacked = {
     id:    "stacked",
     label: "Stacked",
-    blurb: "Centred bands — coming soon.",
-    available: false,
+    blurb: "Centred bands — modern poster look with icons in the middle.",
+    available: true,
+
     Thumbnail() {
       return h("svg", { viewBox: "0 0 60 42", "aria-hidden": "true" },
         h("rect", { x: 0.5, y: 0.5, width: 59, height: 41, rx: 3,
                     fill: "none", stroke: "currentColor", strokeWidth: 1, opacity: 0.4 }),
-        // brand centered
         h("rect", { x: 22, y: 5, width: 16, height: 3, fill: "currentColor", opacity: 0.85 }),
-        // divider 1
         h("line", { x1: 8, y1: 11, x2: 52, y2: 11, stroke: "currentColor", strokeWidth: 0.6, opacity: 0.55 }),
-        // icons strip centered
         h("rect", { x: 16, y: 14, width: 5, height: 5, fill: "currentColor", opacity: 0.7 }),
         h("rect", { x: 23, y: 14, width: 5, height: 5, fill: "currentColor", opacity: 0.7 }),
         h("rect", { x: 30, y: 14, width: 5, height: 5, fill: "currentColor", opacity: 0.7 }),
         h("rect", { x: 37, y: 14, width: 5, height: 5, fill: "currentColor", opacity: 0.7 }),
-        // divider 2
         h("line", { x1: 8, y1: 22, x2: 52, y2: 22, stroke: "currentColor", strokeWidth: 0.6, opacity: 0.55 }),
-        // rows centered
         h("rect", { x: 20, y: 25, width: 20, height: 1.3, fill: "currentColor", opacity: 0.55 }),
         h("rect", { x: 22, y: 28.5, width: 16, height: 1.3, fill: "currentColor", opacity: 0.55 }),
-        // barcode centered
         h("g", { transform: "translate(22, 33.5)" },
           h("rect", { width: 1, height: 5, fill: "currentColor" }),
           h("rect", { x: 2, width: 1.5, height: 5, fill: "currentColor" }),
@@ -766,9 +807,291 @@
         ),
       );
     },
-    iconsRegionMm: Classic.iconsRegionMm,
-    Preview: Classic.Preview,
-    drawPdf: Classic.drawPdf,
+
+    // Icons get the full inner width as a horizontal strip. The
+    // vertical room is whatever's left between rule1 and the rows /
+    // barcode below — but for v1 we cap at ~2 icon rows so overflow
+    // detection trips before the strip eats the rows band.
+    iconsRegionMm(state) {
+      const g = stackedGeometryMm(state);
+      const iconRowMaxH = (state.iconSizeMm || 14) * 2 + STACKED.iconsGapV;
+      return {
+        availH: Math.max(0, iconRowMaxH),
+        availW: Math.max(0, g.innerW),
+      };
+    },
+
+    Preview({ state, ctx }) {
+      const { BrandLogo, Editable, BarcodeView,
+              setTweak, setRow, removeRow, addRow,
+              rowAddBlocked, enabledIcons, sizeFor, getIconMeta } = ctx;
+      const t = state;
+      // The Stacked CSS layout is mostly self-describing (flex bands +
+      // dividers), so we don't need to push geometry vars — the bands
+      // size themselves to their content + the grid does the rest.
+      return h("div", { className: "sm-trim sm-tpl-stacked" },
+        h("div", { className: "sm-s-brand" },
+          h(BrandLogo, { src: t.brandLogo, bw: t.brandLogoBw }),
+          h(Editable, {
+            className: "sm-brand",
+            value: t.brandName,
+            onChange: (v) => setTweak("brandName", v),
+            placeholder: "BRAND",
+          }),
+        ),
+        h("hr", { className: "sm-s-rule" }),
+        h("div", { className: "sm-s-icons" },
+          enabledIcons.map((k) => {
+            const meta = getIconMeta(k, t.customIcons);
+            if (!meta) return null;
+            const sz = sizeFor(k, t);
+            return h("div", {
+              key: k,
+              className: "sm-icon",
+              "data-key": k,
+              title: `${meta.label} (${sz}mm)`,
+              style: { width: `${sz}mm`, height: `${sz}mm` },
+            },
+              meta.svg
+                ? meta.svg
+                : h("span", {
+                    style: { width: "100%", height: "100%", display: "grid", placeItems: "center" },
+                    dangerouslySetInnerHTML: { __html: meta.svgString || "" },
+                  }),
+            );
+          }),
+        ),
+        h("hr", { className: "sm-s-rule" }),
+        h("div", { className: "sm-s-rows" },
+          (t.rows || []).map((r, i) =>
+            h("div", { key: i, className: "sm-row" },
+              h(Editable, {
+                className: "sm-row-label",
+                value: r.label,
+                onChange: (v) => setRow(i, { ...r, label: v }),
+                placeholder: "Label",
+              }),
+              h(Editable, {
+                className: "sm-row-value",
+                value: r.value,
+                onChange: (v) => setRow(i, { ...r, value: v }),
+                placeholder: "Value",
+              }),
+              h("button", {
+                className: "sm-row-remove",
+                onClick: () => removeRow(i),
+                title: "Remove row",
+              }, "×"),
+            ),
+          ),
+          h("button", {
+            className: "sm-row-add",
+            onClick: addRow,
+            disabled: rowAddBlocked,
+            title: rowAddBlocked
+              ? "No more room — make the card taller or remove a row first."
+              : "Add a row",
+          }, "+ Add row"),
+        ),
+        h("div", { className: "sm-barcode sm-s-barcode" },
+          h(BarcodeView, {
+            digits: t.ean13,
+            heightMm: t.barcodeHeightMm,
+            xDimMm: t.barcodeXDimMm,
+          }),
+        ),
+      );
+    },
+
+    async drawPdf(pdf, state, ctx) {
+      const { logoToBlackPng, packIcons, ICON_ORDER } = ctx;
+      const W = state.widthMm, H = state.heightMm, B = state.bleedMm || 0;
+      const trimX = B, trimY = B;
+      const setBlackText   = () => pdf.setTextColor(0, 0, 0, 1);
+      const setBlackStroke = () => pdf.setDrawColor(0, 0, 0, 1);
+
+      const g = stackedGeometryMm(state);
+
+      // 1. Brand band — logo + name CENTRED horizontally inside the
+      //    brand band. We measure both and emit them as a unit so the
+      //    composite stays centred no matter the logo/name widths.
+      let logoBitmap = null;
+      let logoW = 0, logoH = 0;
+      if (state.brandLogo) {
+        try {
+          const src = state.brandLogoBw ? await logoToBlackPng(state.brandLogo) : state.brandLogo;
+          const probe = await new Promise((res, rej) => {
+            const im = new Image();
+            im.onload = () => res({ w: im.naturalWidth, h: im.naturalHeight });
+            im.onerror = rej;
+            im.src = src;
+          });
+          const aspect = probe.w / probe.h;
+          const LOGO_MAX_H = Math.min(STACKED.brandH - 2, 10);
+          const LOGO_MAX_W = 30;
+          let lh = LOGO_MAX_H, lw = lh * aspect;
+          if (lw > LOGO_MAX_W) { lw = LOGO_MAX_W; lh = lw / aspect; }
+          logoBitmap = src;
+          logoW = lw; logoH = lh;
+        } catch (e) {
+          console.warn("Logo embed failed:", e);
+        }
+      }
+      let nameW = 0;
+      const nameSizeMm = 4.6;
+      if (state.brandName) {
+        pdf.setFont("Helvetica", "bold");
+        pdf.setFontSize(nameSizeMm * 2.83465);
+        nameW = pdf.getTextWidth(state.brandName);
+      }
+      const logoNameGap = (logoW > 0 && nameW > 0) ? 3 : 0;
+      const composite = logoW + logoNameGap + nameW;
+      const brandX0 = trimX + (W - composite) / 2;
+      const brandMidY = trimY + g.brandY0 + STACKED.brandH / 2;
+      if (logoBitmap) {
+        pdf.addImage(logoBitmap, "PNG", brandX0, brandMidY - logoH / 2,
+                     logoW, logoH, undefined, "FAST");
+      }
+      if (state.brandName) {
+        setBlackText();
+        pdf.setFont("Helvetica", "bold");
+        pdf.setFontSize(nameSizeMm * 2.83465);
+        const nameBaselineY = brandMidY + nameSizeMm * 0.32;
+        pdf.text(state.brandName, brandX0 + logoW + logoNameGap, nameBaselineY);
+      }
+
+      // 2. Divider rule 1 (under brand)
+      setBlackStroke();
+      pdf.setLineWidth(STACKED.rule);
+      pdf.line(trimX + STACKED.padX, trimY + g.rule1Y,
+               trimX + W - STACKED.padX, trimY + g.rule1Y);
+
+      // 3. Icons strip — centred horizontally, may wrap into rows.
+      const enabledIcons = [
+        ...ICON_ORDER.filter(k => state.icons && state.icons[k]),
+        ...(state.customIcons || []).filter(c => state.icons && state.icons[c.key]).map(c => c.key),
+      ];
+      let iconsBlockH = 0;
+      let iconsBottomY = trimY + g.iconsY0;
+      if (enabledIcons.length && typeof pdf.svg === "function") {
+        const region = Stacked.iconsRegionMm(state);
+        const packed = packIcons(enabledIcons, state, STACKED.iconsGapH, region.availW);
+        iconsBlockH = packed.totalH;
+        // Centre the packed block horizontally inside the card.
+        const iconsLeftX = trimX + (W - packed.totalW) / 2;
+        const iconsTopY  = trimY + g.iconsY0;
+        const card = document.querySelector(".shipping-mark");
+        const svgByKey = {};
+        if (card) {
+          card.querySelectorAll(".sm-icon[data-key]").forEach(el => {
+            const key = el.getAttribute("data-key");
+            const svg = el.querySelector("svg");
+            if (key && svg) svgByKey[key] = svg;
+          });
+        }
+        for (const { key, x, y, sz } of packed.placements) {
+          const src = svgByKey[key];
+          if (!src) continue;
+          const cloned = src.cloneNode(true);
+          cloned.querySelectorAll("[fill]").forEach((el) => {
+            const f = el.getAttribute("fill");
+            if (f === "currentColor") el.setAttribute("fill", "#000");
+          });
+          cloned.querySelectorAll("[stroke]").forEach((el) => {
+            const s = el.getAttribute("stroke");
+            if (s === "currentColor") el.setAttribute("stroke", "#000");
+          });
+          const holder = document.createElement("div");
+          holder.style.cssText = "position:absolute;left:-99999px;top:-99999px;pointer-events:none;";
+          holder.appendChild(cloned);
+          document.body.appendChild(holder);
+          try {
+            await pdf.svg(cloned, {
+              x: iconsLeftX + x,
+              y: iconsTopY + y,
+              width: sz,
+              height: sz,
+            });
+          } catch (err) {
+            console.warn("Icon", key, "failed to render via svg2pdf:", err);
+          } finally {
+            document.body.removeChild(holder);
+          }
+        }
+        iconsBottomY = iconsTopY + iconsBlockH;
+      }
+
+      // 4. Divider rule 2 (under icons)
+      const rule2Y = iconsBottomY + STACKED.bandGap;
+      pdf.setLineWidth(STACKED.rule);
+      setBlackStroke();
+      pdf.line(trimX + STACKED.padX, trimY + (rule2Y - trimY),
+               trimX + W - STACKED.padX, trimY + (rule2Y - trimY));
+
+      // 5. Rows — each row centred horizontally. We measure
+      //    label + value text widths per row to centre each.
+      const rowSizeMm = state.rowTextSizeMm || 2.6;
+      const rowGapMm  = 0.8;
+      const rowLineH  = rowSizeMm * 1.25;
+      const labelValueGap = 1.5;
+      setBlackText();
+      pdf.setFontSize(rowSizeMm * 2.83465);
+      let rowY = rule2Y + STACKED.bandGap + rowSizeMm * 0.85;
+      const rowsBottomLimit = trimY + g.barcodeY0 - STACKED.bandGap;
+      const rows = state.rows || [];
+      rows.forEach(r => {
+        if (!r.label && !r.value) return;
+        if (rowY > rowsBottomLimit) return;  // out of room — preview shows overflow warning
+        pdf.setFont("Helvetica", "bold");
+        const labelText = r.label ? r.label + ":" : "";
+        const labelW = labelText ? pdf.getTextWidth(labelText) : 0;
+        pdf.setFont("Helvetica", "normal");
+        const valueW = r.value ? pdf.getTextWidth(r.value) : 0;
+        const lineGap = (labelW > 0 && valueW > 0) ? labelValueGap : 0;
+        const totalW = labelW + lineGap + valueW;
+        const startX = trimX + (W - totalW) / 2;
+        if (labelText) {
+          pdf.setFont("Helvetica", "bold");
+          pdf.text(labelText, startX, rowY);
+        }
+        if (r.value) {
+          pdf.setFont("Helvetica", "normal");
+          pdf.text(r.value, startX + labelW + lineGap, rowY);
+        }
+        rowY += rowLineH + rowGapMm;
+      });
+
+      // 6. Barcode — centred horizontally at the bottom
+      const eanNorm = window.BARCODE.normalizeEan13(state.ean13);
+      if (eanNorm.ok) {
+        const eanW = window.BARCODE.widthMm({ xDimMm: state.barcodeXDimMm });
+        const barcodeX = trimX + (W - eanW) / 2;
+        await window.BARCODE.drawToPdf(pdf, {
+          digits: eanNorm.digits,
+          x: barcodeX,
+          y: trimY + g.barcodeY0,
+          xDimMm: state.barcodeXDimMm,
+          heightMm: state.barcodeHeightMm,
+          includeText: true,
+        });
+      }
+
+      // 7. Crop marks (corner ticks in the bleed)
+      if (state.showCropMarks && B > 0) {
+        setBlackStroke();
+        pdf.setLineWidth(0.15);
+        const tick = Math.min(3, B);
+        const draw = (x, y, dx, dy) => pdf.line(x, y, x + dx, y + dy);
+        draw(trimX - tick, trimY,           tick - 0.5, 0);
+        draw(trimX,        trimY - tick,    0, tick - 0.5);
+        draw(trimX + W + 0.5, trimY,        tick - 0.5, 0);
+        draw(trimX + W,    trimY - tick,    0, tick - 0.5);
+        draw(trimX - tick, trimY + H,       tick - 0.5, 0);
+        draw(trimX,        trimY + H + 0.5, 0, tick - 0.5);
+        draw(trimX + W + 0.5, trimY + H,    tick - 0.5, 0);
+        draw(trimX + W,    trimY + H + 0.5, 0, tick - 0.5);
+      }
+    },
   };
 
   // Picker order — left-to-right in the Tweaks panel.
