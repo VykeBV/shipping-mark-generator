@@ -57,6 +57,12 @@ const DEFAULTS = {
   iconSizeMm: 14,              // global icon height
   iconSizesMm: {},             // per-icon override map { key: heightMm } — set in the Advanced panel
   customIcons: [],             // user-uploaded SVGs: [{ key, label, svg, isoNormalMm, safeMinMm, defaultMm }]
+
+  // Active layout template. Each template (registered in templates.jsx)
+  // owns: the Preview component, the PDF render, and the icons-region
+  // geometry. Default "classic" preserves the pre-templates layout
+  // bit-for-bit, so existing presets and PDFs are unaffected.
+  template: "classic",
 };
 
 // Built-in icon order in panel toggles + live preview. Custom icons append.
@@ -102,33 +108,28 @@ function sizeFor(key, state) {
 //   • The PDF renderer's packIcons() call.
 //   • iconsOverflow() to detect when the user's chosen icon size can't
 //     fit, so the UI can surface a red warning.
+// Delegates to the active template's iconsRegionMm function — each
+// template defines its own geometry (Classic = rows-left/icons-right,
+// Ruled = ruled body cells, Stacked = full-width centred strip).
+// Falls back to a Classic-equivalent calculation when the templates
+// module hasn't loaded yet (during initial paint, before templates.jsx
+// has been parsed by Babel). The fallback matches Classic byte-for-byte.
 function availableIconsRegionMm(state) {
-  const trimPadV = 8;                                       // 4mm top + 4mm bottom of .sm-trim
-  const trimPadH = 10;                                      // 5mm left + 5mm right of .sm-trim
-  const headerH = 12;                                       // approximate header height
-  const headerGap = 2.5;                                    // .sm-trim flex-gap between header and body
-  const bodyGap = 4;                                        // .sm-body flex gap between rows and icons
+  if (window.activeTemplate) {
+    return window.activeTemplate(state).iconsRegionMm(state);
+  }
+  // Bootstrap fallback — identical to Classic.iconsRegionMm in templates.jsx
+  const trimPadV = 8, trimPadH = 10, headerH = 12, headerGap = 2.5, bodyGap = 4;
   const barcodeBlockW = window.BARCODE
     ? window.BARCODE.widthMm({ xDimMm: state.barcodeXDimMm || 0.264 }) + 4
     : 36;
-  // Icons can use the FULL body height (we no longer subtract the
-  // barcode block height): `.sm-body` reserves a horizontal column for
-  // the barcode via `padding-right`, so icons (right-anchored) end at
-  // the barcode's left edge horizontally and never overlap. They're
-  // free to extend all the way down to the body bottom.
   const usableH = (state.heightMm || 90) - trimPadV - headerH - headerGap;
-  const bodyW = (state.widthMm || 130) - trimPadH - barcodeBlockW;
-  // Content-aware rows column width:
-  // - With row content → reserve max(40 mm, 40 % of body) so labels stay readable.
-  // - With all rows empty → reserve 0, so icons flex into the freed space.
-  //   The CSS `.sm-rows` still naturally takes some width for the "+ Add row"
-  //   button (~13 mm) but we let icons claim everything up to the right edge;
-  //   any minor overlap is absorbed by the flex layout's auto sizing.
+  const bodyW   = (state.widthMm  || 130) - trimPadH - barcodeBlockW;
   const hasRowContent = (state.rows || []).some(r =>
     (r && r.label && r.label.trim()) || (r && r.value && r.value.trim())
   );
   const minRowsW = hasRowContent ? Math.max(40, bodyW * 0.40) : 0;
-  const usableW = bodyW - minRowsW - bodyGap;
+  const usableW  = bodyW - minRowsW - bodyGap;
   return {
     availH: Math.max(0, usableH),
     availW: Math.max(0, usableW),
@@ -891,6 +892,20 @@ function App() {
   // pure CMYK vector primitives. The barcode is drawn LAST as the topmost
   // element via `window.BARCODE.drawToPdf` so nothing can overlap its bars.
   const renderPageIntoPdf = useCallback(async (pdf, state) => {
+    // Delegate to the active template's drawPdf — each template owns
+    // its own coordinate maths. The shared helpers (logoToBlackPng,
+    // packIcons, ICON_ORDER) are passed in via the `ctx` bag so the
+    // template module doesn't depend on app.jsx internals.
+    const tpl = window.activeTemplate
+      ? window.activeTemplate(state)
+      : null;
+    if (tpl && tpl.drawPdf) {
+      await tpl.drawPdf(pdf, state, { logoToBlackPng, packIcons, ICON_ORDER });
+      return;
+    }
+    // Bootstrap fallback — templates.jsx not loaded yet. Renders the
+    // Classic layout inline so the export still works during dev. This
+    // path mirrors Classic.drawPdf in templates.jsx; keep in sync.
     const W = state.widthMm, H = state.heightMm, B = state.bleedMm || 0;
     const trimX = B, trimY = B;
 
@@ -1942,81 +1957,67 @@ function App() {
           }}
           ref={cardRef}
         >
-          <div className="sm-trim">
-            <div className="sm-header">
-              <BrandLogo src={t.brandLogo} bw={t.brandLogoBw} />
-              <Editable
-                className="sm-brand"
-                value={t.brandName}
-                onChange={(v) => setTweak("brandName", v)}
-                placeholder="BRAND"
-              />
-            </div>
-
-            <div className="sm-body">
-              <div className="sm-rows">
-                {(t.rows || []).map((r, i) => (
-                  <div key={i} className="sm-row">
-                    <Editable
-                      className="sm-row-label"
-                      value={r.label}
-                      onChange={(v) => setRow(i, { ...r, label: v })}
-                      placeholder="Label"
-                    />
-                    <Editable
-                      className="sm-row-value"
-                      value={r.value}
-                      onChange={(v) => setRow(i, { ...r, value: v })}
-                      placeholder="Value"
-                    />
-                    <button className="sm-row-remove" onClick={() => removeRow(i)} title="Remove row">×</button>
-                  </div>
-                ))}
-                <button
-                  className="sm-row-add"
-                  onClick={addRow}
-                  disabled={rowAddBlocked}
-                  title={rowAddBlocked
-                    ? "No more room — make the card taller or remove a row first."
-                    : "Add a row"}
-                >+ Add row</button>
-              </div>
-
-              {enabledIcons.length > 0 && (
-                <div className="sm-icons">
-                  {enabledIcons.map((k) => {
-                    const meta = getIconMeta(k, t.customIcons);
-                    if (!meta) return null;
-                    const sz = sizeFor(k, t);
-                    return (
-                      <div
-                        key={k}
-                        className="sm-icon"
-                        data-key={k}
-                        title={`${meta.label} (${sz}mm)`}
-                        style={{ width: `${sz}mm`, height: `${sz}mm` }}
-                      >
-                        {meta.svg
-                          ? meta.svg
-                          : <span style={{ width: "100%", height: "100%", display: "grid", placeItems: "center" }}
-                                  dangerouslySetInnerHTML={{ __html: meta.svgString || "" }} />}
-                      </div>
-                    );
-                  })}
+          {/* Active template owns the live editor layout. Defaults to
+              Classic (the pre-templates look). Bootstrap fallback inlines
+              the same Classic JSX in case templates.jsx hasn't loaded
+              yet on first paint. */}
+          {window.activeTemplate
+            ? React.createElement(window.activeTemplate(t).Preview, {
+                state: t,
+                ctx: {
+                  BrandLogo, Editable, BarcodeView,
+                  setTweak, setRow, removeRow, addRow,
+                  rowAddBlocked, enabledIcons, sizeFor, getIconMeta,
+                },
+              })
+            : (
+              <div className="sm-trim sm-tpl-classic">
+                <div className="sm-header">
+                  <BrandLogo src={t.brandLogo} bw={t.brandLogoBw} />
+                  <Editable className="sm-brand" value={t.brandName}
+                            onChange={(v) => setTweak("brandName", v)}
+                            placeholder="BRAND" />
                 </div>
-              )}
-            </div>
-
-            {/* Barcode is OUTSIDE the body grid and absolutely positioned at
-                bottom-right of the trim area, mirroring the PDF render. */}
-            <div className="sm-barcode">
-              <BarcodeView
-                digits={t.ean13}
-                heightMm={t.barcodeHeightMm}
-                xDimMm={t.barcodeXDimMm}
-              />
-            </div>
-          </div>
+                <div className="sm-body">
+                  <div className="sm-rows">
+                    {(t.rows || []).map((r, i) => (
+                      <div key={i} className="sm-row">
+                        <Editable className="sm-row-label" value={r.label}
+                                  onChange={(v) => setRow(i, { ...r, label: v })}
+                                  placeholder="Label" />
+                        <Editable className="sm-row-value" value={r.value}
+                                  onChange={(v) => setRow(i, { ...r, value: v })}
+                                  placeholder="Value" />
+                        <button className="sm-row-remove" onClick={() => removeRow(i)}
+                                title="Remove row">×</button>
+                      </div>
+                    ))}
+                    <button className="sm-row-add" onClick={addRow}
+                            disabled={rowAddBlocked}>+ Add row</button>
+                  </div>
+                  {enabledIcons.length > 0 && (
+                    <div className="sm-icons">
+                      {enabledIcons.map((k) => {
+                        const meta = getIconMeta(k, t.customIcons);
+                        if (!meta) return null;
+                        const sz = sizeFor(k, t);
+                        return (
+                          <div key={k} className="sm-icon" data-key={k}
+                               style={{ width: `${sz}mm`, height: `${sz}mm` }}>
+                            {meta.svg || <span style={{ width: "100%", height: "100%" }}
+                              dangerouslySetInnerHTML={{ __html: meta.svgString || "" }} />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                <div className="sm-barcode">
+                  <BarcodeView digits={t.ean13} heightMm={t.barcodeHeightMm}
+                               xDimMm={t.barcodeXDimMm} />
+                </div>
+              </div>
+            )}
 
           {t.showTrimGuide && t.bleedMm > 0 && (
             <div className="sm-trim-guide" />
@@ -2109,6 +2110,46 @@ function App() {
            at the very bottom of the sidebar like a sticky footer. */
         credit="powered by Xafai"
       >
+        {/* ─── Template picker ─────────────────────────────────────────
+            First section so users see the layout choice immediately.
+            Each option is a thumbnail card showing a mini SVG diagram
+            of the layout + label. Selected template is highlighted in
+            brand blue. Templates flagged available:false are visible
+            but disabled with a "soon" badge — placeholders for the
+            Ruled + Stacked work landing in subsequent commits. */}
+        <TweakSection label="Template" />
+        <div className="twk-tpl-picker" role="radiogroup" aria-label="Layout template">
+          {(window.TEMPLATE_LIST || []).map((tpl) => {
+            const selected = (t.template || "classic") === tpl.id;
+            const Thumb = tpl.Thumbnail;
+            return (
+              <button
+                key={tpl.id}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                className={
+                  "twk-tpl-card" +
+                  (selected ? " is-selected" : "") +
+                  (tpl.available === false ? " is-disabled" : "")
+                }
+                onClick={() => {
+                  if (tpl.available === false) return;
+                  setTweak("template", tpl.id);
+                }}
+                disabled={tpl.available === false}
+                title={tpl.blurb}
+              >
+                <div className="twk-tpl-thumb">{Thumb && <Thumb />}</div>
+                <div className="twk-tpl-name">{tpl.label}</div>
+                {tpl.available === false && (
+                  <span className="twk-tpl-soon">Soon</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
         <TweakSection label="Size & bleed" />
         {/* Display-unit selector. Stored value stays in mm internally so
             the layout / PDF / presets are unit-stable; this only changes

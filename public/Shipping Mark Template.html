@@ -721,6 +721,87 @@
     padding-top: 4px !important;
   }
 
+  /* ─── Template picker ────────────────────────────────────────────
+     Sits at the top of the Tweaks sidebar (first collapsible
+     section). One row of thumbnail cards — each card is a small
+     SVG diagram of the layout + label. Active template gets the
+     brand-blue treatment; "coming soon" templates are dimmed with
+     a small badge but still visible so users can see what's
+     planned. */
+  .twk-tpl-picker {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .twk-tpl-card {
+    appearance: none;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 6px 6px 7px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    transition: background .12s, border-color .12s, color .12s;
+    font: inherit;
+  }
+  .twk-tpl-card:hover:not(.is-disabled) {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.22);
+    color: #fff;
+  }
+  .twk-tpl-card.is-selected {
+    background: rgba(157, 201, 232, 0.16);
+    border-color: rgba(157, 201, 232, 0.65);
+    color: #fff;
+  }
+  .twk-tpl-card.is-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .twk-tpl-thumb {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 60 / 42;
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 5px;
+    /* Mini diagrams use currentColor; on the white thumbnail
+       background we want black ink. */
+    color: #111;
+    padding: 4px;
+    box-sizing: border-box;
+  }
+  .twk-tpl-thumb svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .twk-tpl-name {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-align: center;
+  }
+  .twk-tpl-soon {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 215, 130, 0.95);
+    background: rgba(255, 210, 100, 0.18);
+    border: 1px solid rgba(255, 210, 100, 0.45);
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+
   /* ─── Content rows table ───────────────────────────────────────────
      Compact inline editor for the row labels + values. One row per
      content row: [label input] [value input] [×] — easier to scan
@@ -2227,19 +2308,23 @@
      Bump N (everywhere — they're all the same number on purpose) any
      time you change ANY of the linked .jsx files; every browser will
      then refetch on the next page load. -->
-<script type="text/babel" src="config.jsx?v=54"></script>
-<script type="text/babel" src="auth.jsx?v=54"></script>
-<script type="text/babel" src="presets.jsx?v=54"></script>
-<script type="text/babel" src="activity.jsx?v=54"></script>
-<script type="text/babel" src="feedback.jsx?v=54"></script>
+<script type="text/babel" src="config.jsx?v=55"></script>
+<script type="text/babel" src="auth.jsx?v=55"></script>
+<script type="text/babel" src="presets.jsx?v=55"></script>
+<script type="text/babel" src="activity.jsx?v=55"></script>
+<script type="text/babel" src="feedback.jsx?v=55"></script>
 
-<script type="text/babel" src="tweaks-panel.jsx?v=54"></script>
-<script type="text/babel" src="icons.jsx?v=54"></script>
-<script type="text/babel" src="barcode.jsx?v=54"></script>
-<script type="text/babel" src="welcome.jsx?v=54"></script>
-<script type="text/babel" src="account-chip.jsx?v=54"></script>
-<script type="text/babel" src="presets-panel.jsx?v=54"></script>
-<script type="text/babel" src="app.jsx?v=54"></script>
+<script type="text/babel" src="tweaks-panel.jsx?v=55"></script>
+<script type="text/babel" src="icons.jsx?v=55"></script>
+<script type="text/babel" src="barcode.jsx?v=55"></script>
+<script type="text/babel" src="welcome.jsx?v=55"></script>
+<script type="text/babel" src="account-chip.jsx?v=55"></script>
+<script type="text/babel" src="presets-panel.jsx?v=55"></script>
+<!-- templates.jsx must load BEFORE app.jsx — app.jsx uses
+     window.TEMPLATES / window.activeTemplate / window.TEMPLATE_LIST at
+     render time. -->
+<script type="text/babel" src="templates.jsx?v=55"></script>
+<script type="text/babel" src="app.jsx?v=55"></script>
 
 <style>
   #__standalone-tweaks-btn {
